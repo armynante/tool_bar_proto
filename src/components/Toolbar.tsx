@@ -52,9 +52,9 @@ export function Toolbar({
         <div
           className={[
             "absolute right-0 bottom-48 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold hover:bg-white/20",
-            expandLevel === "workspaces" ? "opacity-50 translate-y-0 delay-0 hover:opacity-100" : "",
-            expandLevel === "settings" ? "opacity-50 translate-y-0 delay-0 hover:opacity-100" : "",
-            expandLevel === "menu" ? "opacity-100 translate-y-0 delay-0" : "",
+            expandLevel === "workspaces" ? "opacity-50! translate-y-0 delay-0 hover:opacity-100!" : "",
+            expandLevel === "settings" ? "opacity-50! translate-y-0 delay-0 hover:opacity-100!" : "",
+            expandLevel === "menu" ? "opacity-100! translate-y-0 delay-0" : "",
             expandLevel === "collapsed" ? "opacity-0 translate-y-4 pointer-events-none" : "",
           ].join(" ")}
           role="button"
@@ -66,10 +66,10 @@ export function Toolbar({
         <div
           onClick={onSettingsClick}
           className={[
-            "absolute right-0 bottom-32 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-10",
-            expandLevel === "settings" ? "bg-white/20 opacity-100 hover:bg-white/30" : "bg-white/10 hover:bg-white/30",
-            expandLevel === "workspaces" ? "opacity-50 translate-y-0 delay-75 hover:opacity-100" : "",
-            expandLevel === "menu" ? "opacity-100 translate-y-0 delay-75" : "",
+            "absolute right-0 bottom-32 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-10 hover:bg-white/30",
+            expandLevel === "settings" ? "bg-white/20 opacity-100" : "bg-white/10",
+            expandLevel === "workspaces" ? "opacity-50! translate-y-0 delay-75 hover:opacity-100!" : "",
+            expandLevel === "menu" ? "opacity-100! translate-y-0 delay-75" : "",
             expandLevel === "collapsed" ? "opacity-0 translate-y-4 pointer-events-none" : "",
           ].join(" ")}
           role="button"
@@ -81,10 +81,11 @@ export function Toolbar({
         <div
           onClick={onWorkspacesClick}
           className={[
-            "absolute right-0 bottom-16 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-10",
-            expandLevel === "workspaces" ? "bg-white/20 opacity-100 hover:bg-white/30" : "bg-white/10 hover:bg-white/30",
-            expandLevel === "settings" ? "opacity-50 translate-y-0 delay-150 hover:opacity-100" : "",
-            expandLevel === "menu" ? "opacity-100 translate-y-0 delay-150" : "opacity-0 pointer-events-none",
+            "absolute right-0 bottom-16 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-10 hover:bg-white/30",
+            expandLevel === "workspaces" ? "bg-white/20 opacity-100" : "bg-white/10",
+            expandLevel === "settings" ? "opacity-50! translate-y-0 delay-150 hover:opacity-100!" : "",
+            expandLevel === "menu" ? "opacity-100 translate-y-0 delay-150" : "",
+            expandLevel === "collapsed" ? "opacity-0 pointer-events-none" : "",
           ].join(" ")}
           role="button"
         >
