@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Plus, Home, MessageSquare, Box } from "lucide-react";
 import "./index.css";
 import desktopBg from "./assets/desktop-bg.png";
 import { AppState } from "./types";
 import { saveAppRegistry, loadAppRegistry } from "./utils/storage";
 import { initializeRegistry, WORKSPACE_CONFIGS } from "./config/workspaces";
+import { Dock } from "./components/Dock";
+import { Toolbar } from "./components/Toolbar";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces";
 
@@ -307,13 +308,6 @@ export function App() {
     });
   };
 
-  const workspaceButtons = [
-    { name: "Create", workspace: "create", icon: Plus, shift: "-translate-x-16", delay: "delay-75" },
-    { name: "Main", workspace: "main", icon: Home, shift: "-translate-x-32", delay: "delay-150" },
-    { name: "Interview", workspace: "interview", icon: MessageSquare, shift: "-translate-x-48", delay: "delay-[225ms]" },
-    { name: "Nexus", workspace: "nexus", icon: Box, shift: "-translate-x-64", delay: "delay-300" },
-  ];
-
   const handleLauncherClick = () => {
     setExpandLevel(expandLevel === "collapsed" ? "menu" : "collapsed");
   };
@@ -350,94 +344,14 @@ export function App() {
         ))}
         
         {/* macOS-style Dock */}
-        <div className="bottom-2 left-1/2 z-50 fixed flex items-end gap-2 bg-white/10 shadow-2xl backdrop-blur-2xl px-3 py-2 border border-white/20 rounded-2xl -translate-x-1/2 transform">
-          {Object.values(appRegistry).map(app => (
-            <div
-              key={app.id}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDockClick(app.id);
-              }}
-              className="group relative hover:scale-110 transition-all hover:-translate-y-2 duration-200 cursor-pointer"
-              title={app.title}
-            >
-              <div className="flex justify-center items-center bg-white/20 shadow-lg backdrop-blur-sm border-2 border-white/40 rounded-xl w-14 h-14 overflow-hidden text-4xl">
-                {/* Use the app's dock icon (emoji) */}
-                {app.dockIcon || '📱'}
-              </div>
-              {/* Indicator dot for launched apps only */}
-              {app.isLaunched && (
-                <div className="-bottom-1 left-1/2 absolute bg-white/80 shadow-lg rounded-full w-1.5 h-1.5 -translate-x-1/2 transform"></div>
-              )}
-            </div>
-          ))}
-        </div>
+        <Dock appRegistry={appRegistry} onDockClick={handleDockClick} />
 
-        <div className="flex justify-end items-end p-8 w-full h-svh">
-          {/* Toolbar container */}
-          <div className="relative">
-            {/* Main launcher button with X when expanded */}
-            <div
-              id="toolbar-launcher"
-              role="button"
-              aria-pressed={expandLevel !== "collapsed"}
-              onClick={handleLauncherClick}
-              className={[
-                "absolute right-0 bottom-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 cursor-pointer transition-all duration-300 z-20 rounded-xl shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-2xl font-bold",
-                expandLevel === "collapsed" ? "w-12 h-3 hover:scale-150" : "w-12 h-12",
-              ].join(" ")}
-            >
-              {expandLevel !== "collapsed" && "×"}
-            </div>
-
-            {/* Settings button */}
-            <div
-              className={[
-                "absolute right-0 bottom-32 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold hover:bg-white/20",
-                expandLevel !== "collapsed" ? "opacity-100 translate-y-0 delay-75" : "opacity-0 translate-y-4 pointer-events-none",
-              ].join(" ")}
-              role="button"
-            >
-              Settings
-            </div>
-
-            {/* Workspaces button */}
-            <div
-              onClick={handleWorkspacesClick}
-              className={[
-                "absolute right-0 bottom-16 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-10 hover:bg-white/30",
-                expandLevel === "workspaces" ? "bg-white/20" : "bg-white/10",
-                expandLevel === "menu" ? "opacity-100 translate-y-0 delay-150" : "opacity-0 pointer-events-none",
-                expandLevel === "workspaces" ? "opacity-100" : "",
-              ].join(" ")}
-              role="button"
-            >
-              Workspaces
-            </div>
-
-            {/* Workspace items (horizontal slide from right to left) */}
-            {workspaceButtons.map((ws, i) => {
-              const IconComponent = ws.icon;
-              return (
-                <div
-                  key={i}
-                  onClick={() => handleWorkspaceClick(ws.workspace)}
-                  className={[
-                    "absolute right-0 bottom-16 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transform-gpu transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:bg-white/20",
-                    expandLevel === "workspaces" ? `${ws.shift} opacity-100` : "translate-x-0 opacity-0 pointer-events-none",
-                    ws.delay,
-                  ].join(" ")}
-                  role="button"
-                >
-                  <IconComponent className="text-white" size={16} strokeWidth={2.5} />
-                  <div className="mt-0.5 font-bold text-[6px] text-white">
-                    {ws.name}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <Toolbar 
+          expandLevel={expandLevel}
+          onLauncherClick={handleLauncherClick}
+          onWorkspacesClick={handleWorkspacesClick}
+          onWorkspaceClick={handleWorkspaceClick}
+        />
       </div>
     </div>
   )
