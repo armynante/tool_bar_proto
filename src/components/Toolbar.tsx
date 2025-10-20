@@ -1,4 +1,5 @@
-import { Plus, Home, MessageSquare, Box, Settings2, EyeOff, Move } from "lucide-react";
+import { Plus, Home, MessageSquare, Box, Settings2, EyeOff, Move, X, Save, Grid, EyeOffIcon } from "lucide-react";
+import { useState, useEffect } from "react";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
@@ -17,11 +18,27 @@ export function Toolbar({
   onSettingsClick,
   onWorkspaceClick 
 }: ToolbarProps) {
+  const [createMode, setCreateMode] = useState(false);
+
+  // Reset createMode when workspaces view is closed
+  useEffect(() => {
+    if (expandLevel !== "workspaces") {
+      setCreateMode(false);
+    }
+  }, [expandLevel]);
+
   const workspaceButtons = [
     { name: "Create", workspace: "create", icon: Plus, shift: "-translate-x-16", delay: "delay-75" },
     { name: "Main", workspace: "main", icon: Home, shift: "-translate-x-32", delay: "delay-150" },
     { name: "Interview", workspace: "interview", icon: MessageSquare, shift: "-translate-x-48", delay: "delay-[225ms]" },
     { name: "Nexus", workspace: "nexus", icon: Box, shift: "-translate-x-64", delay: "delay-300" },
+  ];
+
+  const createModeButtons = [
+    { name: "cancel", workspace: "create", icon: X, shift: "-translate-x-16", delay: "delay-75", isCancel: true },
+    { name: "save", workspace: "create", icon: Save, shift: "-translate-x-32", delay: "delay-150" },
+    { name: "arrange", workspace: "create", icon: Grid, shift: "-translate-x-48", delay: "delay-[225ms]" },
+    { name: "hide all", workspace: "create", icon: EyeOffIcon, shift: "-translate-x-64", delay: "delay-300" },
   ];
 
   const settingsButtons = [
@@ -92,16 +109,56 @@ export function Toolbar({
           ].join(" ")}
           role="button"
         >
-          Workspaces
+          {createMode ? "Create" : "Workspaces"}
         </div>
 
         {/* Workspace items (horizontal slide from right to left) - follow Workspaces button position */}
-        {workspaceButtons.map((ws, i) => {
+        {!createMode && workspaceButtons.map((ws, i) => {
           const IconComponent = ws.icon;
+          const isFirstButton = i === 0;
+          const handleClick = () => {
+            if (isFirstButton) {
+              setCreateMode(true);
+            } else {
+              onWorkspaceClick(ws.workspace);
+            }
+          };
+
           return (
             <div
               key={i}
-              onClick={() => onWorkspaceClick(ws.workspace)}
+              onClick={handleClick}
+              className={[
+                "absolute right-0 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transform-gpu transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:bg-white/20",
+                // Dynamic position matching Workspaces button
+                expandLevel === "workspaces" ? "bottom-16" : "bottom-32",
+                expandLevel === "workspaces" ? `${ws.shift} opacity-100` : "translate-x-0 opacity-0 pointer-events-none",
+                ws.delay,
+              ].join(" ")}
+              role="button"
+            >
+              <IconComponent className="text-white" size={16} strokeWidth={2.5} />
+              <div className="mt-0.5 font-bold text-[6px] text-white">
+                {ws.name}
+              </div>
+            </div>
+          );
+        })}
+
+        {createMode && createModeButtons.map((ws, i) => {
+          const IconComponent = ws.icon;
+          const handleClick = () => {
+            if ('isCancel' in ws && ws.isCancel) {
+              setCreateMode(false);
+            } else {
+              onWorkspaceClick(ws.workspace);
+            }
+          };
+
+          return (
+            <div
+              key={i}
+              onClick={handleClick}
               className={[
                 "absolute right-0 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transform-gpu transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:bg-white/20",
                 // Dynamic position matching Workspaces button
