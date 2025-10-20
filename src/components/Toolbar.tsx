@@ -1,18 +1,20 @@
-import { Plus, Home, MessageSquare, Box } from "lucide-react";
+import { Plus, Home, MessageSquare, Box, Settings2, EyeOff, Move } from "lucide-react";
 
-type ExpandLevel = "collapsed" | "menu" | "workspaces";
+type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
 interface ToolbarProps {
   expandLevel: ExpandLevel;
   onLauncherClick: () => void;
   onWorkspacesClick: () => void;
+  onSettingsClick: () => void;
   onWorkspaceClick: (workspace: string) => void;
 }
 
 export function Toolbar({ 
   expandLevel, 
   onLauncherClick, 
-  onWorkspacesClick, 
+  onWorkspacesClick,
+  onSettingsClick,
   onWorkspaceClick 
 }: ToolbarProps) {
   const workspaceButtons = [
@@ -20,6 +22,12 @@ export function Toolbar({
     { name: "Main", workspace: "main", icon: Home, shift: "-translate-x-32", delay: "delay-150" },
     { name: "Interview", workspace: "interview", icon: MessageSquare, shift: "-translate-x-48", delay: "delay-[225ms]" },
     { name: "Nexus", workspace: "nexus", icon: Box, shift: "-translate-x-64", delay: "delay-300" },
+  ];
+
+  const settingsButtons = [
+    { name: "Edit", icon: Settings2, shift: "-translate-x-16", delay: "delay-75" },
+    { name: "Hide", icon: EyeOff, shift: "-translate-x-32", delay: "delay-150" },
+    { name: "Move", icon: Move, shift: "-translate-x-48", delay: "delay-[225ms]" },
   ];
 
   return (
@@ -40,11 +48,29 @@ export function Toolbar({
           {expandLevel !== "collapsed" && "×"}
         </div>
 
-        {/* Settings button */}
+        {/* Utilities button */}
         <div
           className={[
-            "absolute right-0 bottom-32 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold hover:bg-white/20",
-            expandLevel !== "collapsed" ? "opacity-100 translate-y-0 delay-75" : "opacity-0 translate-y-4 pointer-events-none",
+            "absolute right-0 bottom-48 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold hover:bg-white/20",
+            expandLevel === "workspaces" ? "opacity-50 translate-y-0 delay-0" : "",
+            expandLevel === "settings" ? "opacity-50 translate-y-0 delay-0" : "",
+            expandLevel === "menu" ? "opacity-100 translate-y-0 delay-0" : "",
+            expandLevel === "collapsed" ? "opacity-0 translate-y-4 pointer-events-none" : "",
+          ].join(" ")}
+          role="button"
+        >
+          Utilities
+        </div>
+
+        {/* Settings button */}
+        <div
+          onClick={onSettingsClick}
+          className={[
+            "absolute right-0 bottom-32 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-10 hover:bg-white/30",
+            expandLevel === "settings" ? "bg-white/20 opacity-100" : "bg-white/10",
+            expandLevel === "workspaces" ? "opacity-50 translate-y-0 delay-75" : "",
+            expandLevel === "menu" ? "opacity-100 translate-y-0 delay-75" : "",
+            expandLevel === "collapsed" ? "opacity-0 translate-y-4 pointer-events-none" : "",
           ].join(" ")}
           role="button"
         >
@@ -56,9 +82,9 @@ export function Toolbar({
           onClick={onWorkspacesClick}
           className={[
             "absolute right-0 bottom-16 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-10 hover:bg-white/30",
-            expandLevel === "workspaces" ? "bg-white/20" : "bg-white/10",
+            expandLevel === "workspaces" ? "bg-white/20 opacity-100" : "bg-white/10",
+            expandLevel === "settings" ? "opacity-50 translate-y-0 delay-150" : "",
             expandLevel === "menu" ? "opacity-100 translate-y-0 delay-150" : "opacity-0 pointer-events-none",
-            expandLevel === "workspaces" ? "opacity-100" : "",
           ].join(" ")}
           role="button"
         >
@@ -75,6 +101,7 @@ export function Toolbar({
               className={[
                 "absolute right-0 bottom-16 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transform-gpu transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:bg-white/20",
                 expandLevel === "workspaces" ? `${ws.shift} opacity-100` : "translate-x-0 opacity-0 pointer-events-none",
+                expandLevel === "settings" ? "opacity-50" : "",
                 ws.delay,
               ].join(" ")}
               role="button"
@@ -82,6 +109,27 @@ export function Toolbar({
               <IconComponent className="text-white" size={16} strokeWidth={2.5} />
               <div className="mt-0.5 font-bold text-[6px] text-white">
                 {ws.name}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Settings items (horizontal slide from right to left) */}
+        {settingsButtons.map((setting, i) => {
+          const IconComponent = setting.icon;
+          return (
+            <div
+              key={i}
+              className={[
+                "absolute right-0 bottom-32 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transform-gpu transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:bg-white/20",
+                expandLevel === "settings" ? `${setting.shift} opacity-100` : "translate-x-0 opacity-0 pointer-events-none",
+                setting.delay,
+              ].join(" ")}
+              role="button"
+            >
+              <IconComponent className="text-white" size={16} strokeWidth={2.5} />
+              <div className="mt-0.5 font-bold text-[6px] text-white">
+                {setting.name}
               </div>
             </div>
           );

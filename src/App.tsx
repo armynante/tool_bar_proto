@@ -7,7 +7,7 @@ import { initializeRegistry, WORKSPACE_CONFIGS } from "./config/workspaces";
 import { Dock } from "./components/Dock";
 import { Toolbar } from "./components/Toolbar";
 
-type ExpandLevel = "collapsed" | "menu" | "workspaces";
+type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
 interface WindowProps {
   id: string;
@@ -316,6 +316,10 @@ export function App() {
     setExpandLevel("workspaces");
   };
 
+  const handleSettingsClick = () => {
+    setExpandLevel("settings");
+  };
+
   return (
     <div className="w-full h-full">
       <div 
@@ -350,6 +354,7 @@ export function App() {
           expandLevel={expandLevel}
           onLauncherClick={handleLauncherClick}
           onWorkspacesClick={handleWorkspacesClick}
+          onSettingsClick={handleSettingsClick}
           onWorkspaceClick={handleWorkspaceClick}
         />
       </div>
