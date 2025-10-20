@@ -313,11 +313,21 @@ export function App() {
   };
 
   const handleWorkspacesClick = () => {
-    setExpandLevel("workspaces");
+    // Toggle between workspaces and other states
+    if (expandLevel === "workspaces") {
+      setExpandLevel("menu");
+    } else {
+      setExpandLevel("workspaces");
+    }
   };
 
   const handleSettingsClick = () => {
-    setExpandLevel("settings");
+    // Toggle between settings and other states
+    if (expandLevel === "settings") {
+      setExpandLevel("menu");
+    } else {
+      setExpandLevel("settings");
+    }
   };
 
   return (
