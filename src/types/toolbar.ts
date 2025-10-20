@@ -4,8 +4,10 @@ export interface ToolbarButtonConfig {
   name: string;
   workspace?: string;
   icon: LucideIcon;
-  shift: string;
-  delay: string;
+  /** @deprecated Will be auto-calculated based on button index */
+  shift?: string;
+  /** @deprecated Will be auto-calculated based on button index */
+  delay?: string;
   isCancel?: boolean;
   opensSubmenu?: string; // ID of submenu this button opens
   onClick?: () => void;

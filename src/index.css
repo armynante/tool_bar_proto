@@ -14,15 +14,3 @@
     background-attachment: fixed;
   }
 }
-
-@layer utilities {
-  .-translate-x-80 {
-    transform: translateX(-20rem);
-  }
-  .-translate-x-96 {
-    transform: translateX(-24rem);
-  }
-  .delay-\[450ms\] {
-    transition-delay: 450ms;
-  }
-}

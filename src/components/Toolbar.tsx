@@ -34,32 +34,32 @@ export function Toolbar({
   }, [expandLevel, navigationPath.length, navigateBack]);
 
   const workspaceButtons: ToolbarButtonConfig[] = [
-    { name: "Create", workspace: "create", icon: Plus, shift: "-translate-x-16", delay: "delay-75", opensSubmenu: "create" },
-    { name: "Main", workspace: "main", icon: Home, shift: "-translate-x-32", delay: "delay-150" },
-    { name: "Interview", workspace: "interview", icon: MessageSquare, shift: "-translate-x-48", delay: "delay-[225ms]" },
-    { name: "Nexus", workspace: "nexus", icon: Box, shift: "-translate-x-64", delay: "delay-300" },
+    { name: "Create", workspace: "create", icon: Plus, opensSubmenu: "create" },
+    { name: "Main", workspace: "main", icon: Home },
+    { name: "Interview", workspace: "interview", icon: MessageSquare },
+    { name: "Nexus", workspace: "nexus", icon: Box },
   ];
 
   const createModeButtons: ToolbarButtonConfig[] = [
-    { name: "cancel", workspace: "create", icon: X, shift: "-translate-x-16", delay: "delay-75", isCancel: true },
-    { name: "save", workspace: "create", icon: Save, shift: "-translate-x-32", delay: "delay-150" },
-    { name: "arrange", workspace: "create", icon: Grid, shift: "-translate-x-48", delay: "delay-[225ms]", opensSubmenu: "arrange" },
-    { name: "hide all", workspace: "create", icon: EyeOffIcon, shift: "-translate-x-64", delay: "delay-300" },
+    { name: "cancel", workspace: "create", icon: X, isCancel: true },
+    { name: "save", workspace: "create", icon: Save },
+    { name: "arrange", workspace: "create", icon: Grid, opensSubmenu: "arrange" },
+    { name: "hide all", workspace: "create", icon: EyeOffIcon },
   ];
 
   const arrangeButtons: ToolbarButtonConfig[] = [
-    { name: "cancel", workspace: "arrange", icon: X, shift: "-translate-x-16", delay: "delay-75", isCancel: true },
-    { name: "center", workspace: "arrange", icon: Maximize2, shift: "-translate-x-32", delay: "delay-150" },
-    { name: "maximize", workspace: "arrange", icon: Maximize, shift: "-translate-x-48", delay: "delay-[225ms]" },
-    { name: "halves", workspace: "arrange", icon: Columns2, shift: "-translate-x-64", delay: "delay-300" },
-    { name: "quarters", workspace: "arrange", icon: Grid2X2, shift: "-translate-x-80", delay: "delay-[375ms]" },
-    { name: "thirds", workspace: "arrange", icon: Columns3, shift: "-translate-x-96", delay: "delay-[450ms]" },
+    { name: "cancel", workspace: "arrange", icon: X, isCancel: true },
+    { name: "center", workspace: "arrange", icon: Maximize2 },
+    { name: "maximize", workspace: "arrange", icon: Maximize },
+    { name: "halves", workspace: "arrange", icon: Columns2 },
+    { name: "quarters", workspace: "arrange", icon: Grid2X2 },
+    { name: "thirds", workspace: "arrange", icon: Columns3 },
   ];
 
   const settingsButtons: ToolbarButtonConfig[] = [
-    { name: "Edit", icon: Settings2, shift: "-translate-x-16", delay: "delay-75" },
-    { name: "Hide", icon: EyeOff, shift: "-translate-x-32", delay: "delay-150" },
-    { name: "Move", icon: Move, shift: "-translate-x-48", delay: "delay-[225ms]" },
+    { name: "Edit", icon: Settings2 },
+    { name: "Hide", icon: EyeOff },
+    { name: "Move", icon: Move },
   ];
 
   const handleWorkspaceButtonClick = (button: ToolbarButtonConfig) => {
