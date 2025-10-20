@@ -1,5 +1,8 @@
 import { Plus, Home, MessageSquare, Box, Settings2, EyeOff, Move, X, Save, Grid, EyeOffIcon } from "lucide-react";
 import { useState, useEffect } from "react";
+import { ToolbarSubmenu } from "./ToolbarSubmenu";
+import { ToolbarButtonConfig } from "../types/toolbar";
+import { useSubmenuTransition } from "../hooks/useSubmenuAnimation";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
@@ -18,34 +21,67 @@ export function Toolbar({
   onSettingsClick,
   onWorkspaceClick 
 }: ToolbarProps) {
-  const [createMode, setCreateMode] = useState(false);
+  const { currentSubmenu, switchToSubmenu, closeCurrentSubmenu } = useSubmenuTransition(300);
 
-  // Reset createMode when workspaces view is closed
+  // Reset submenu when expandLevel changes
   useEffect(() => {
     if (expandLevel !== "workspaces") {
-      setCreateMode(false);
+      closeCurrentSubmenu();
     }
-  }, [expandLevel]);
+  }, [expandLevel, closeCurrentSubmenu]);
 
-  const workspaceButtons = [
+  const workspaceButtons: ToolbarButtonConfig[] = [
     { name: "Create", workspace: "create", icon: Plus, shift: "-translate-x-16", delay: "delay-75" },
     { name: "Main", workspace: "main", icon: Home, shift: "-translate-x-32", delay: "delay-150" },
     { name: "Interview", workspace: "interview", icon: MessageSquare, shift: "-translate-x-48", delay: "delay-[225ms]" },
     { name: "Nexus", workspace: "nexus", icon: Box, shift: "-translate-x-64", delay: "delay-300" },
   ];
 
-  const createModeButtons = [
+  const createModeButtons: ToolbarButtonConfig[] = [
     { name: "cancel", workspace: "create", icon: X, shift: "-translate-x-16", delay: "delay-75", isCancel: true },
     { name: "save", workspace: "create", icon: Save, shift: "-translate-x-32", delay: "delay-150" },
     { name: "arrange", workspace: "create", icon: Grid, shift: "-translate-x-48", delay: "delay-[225ms]" },
     { name: "hide all", workspace: "create", icon: EyeOffIcon, shift: "-translate-x-64", delay: "delay-300" },
   ];
 
-  const settingsButtons = [
+  const settingsButtons: ToolbarButtonConfig[] = [
     { name: "Edit", icon: Settings2, shift: "-translate-x-16", delay: "delay-75" },
     { name: "Hide", icon: EyeOff, shift: "-translate-x-32", delay: "delay-150" },
     { name: "Move", icon: Move, shift: "-translate-x-48", delay: "delay-[225ms]" },
   ];
+
+  const handleWorkspaceButtonClick = (button: ToolbarButtonConfig) => {
+    if (button.name === "Create") {
+      switchToSubmenu("create");
+    } else if (button.workspace) {
+      onWorkspaceClick(button.workspace);
+    }
+  };
+
+  const handleCreateButtonClick = (button: ToolbarButtonConfig) => {
+    if (button.isCancel) {
+      closeCurrentSubmenu();
+    } else if (button.workspace) {
+      onWorkspaceClick(button.workspace);
+    }
+  };
+
+  const getWorkspaceAnimationState = () => {
+    if (currentSubmenu === "create") return "collapsing";
+    if (currentSubmenu === null && expandLevel === "workspaces") return "expanded";
+    return "collapsed";
+  };
+
+  const getCreateAnimationState = () => {
+    if (currentSubmenu === "create") return "expanded";
+    if (currentSubmenu === null) return "collapsed";
+    return "collapsing";
+  };
+
+  const getSettingsAnimationState = () => {
+    if (expandLevel === "settings") return "expanded";
+    return "collapsed";
+  };
 
   return (
     <div className="flex justify-end items-end p-8 w-full h-svh">
@@ -109,97 +145,38 @@ export function Toolbar({
           ].join(" ")}
           role="button"
         >
-          {createMode ? "Create" : "Workspaces"}
+          {currentSubmenu === "create" ? "Create" : "Workspaces"}
         </div>
 
-        {/* Workspace items (horizontal slide from right to left) - follow Workspaces button position */}
-        {!createMode && workspaceButtons.map((ws, i) => {
-          const IconComponent = ws.icon;
-          const isFirstButton = i === 0;
-          const handleClick = () => {
-            if (isFirstButton) {
-              setCreateMode(true);
-            } else {
-              onWorkspaceClick(ws.workspace);
-            }
-          };
+        {/* Workspace Submenu */}
+        <ToolbarSubmenu
+          buttons={workspaceButtons}
+          isActive={expandLevel === "workspaces" && currentSubmenu === null}
+          animationState={getWorkspaceAnimationState()}
+          bottomPosition="bottom-16"
+          expandLevel={expandLevel}
+          onItemClick={handleWorkspaceButtonClick}
+        />
 
-          return (
-            <div
-              key={i}
-              onClick={handleClick}
-              className={[
-                "absolute right-0 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transform-gpu transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:bg-white/20",
-                // Dynamic position matching Workspaces button
-                expandLevel === "workspaces" ? "bottom-16" : "bottom-32",
-                expandLevel === "workspaces" ? `${ws.shift} opacity-100` : "translate-x-0 opacity-0 pointer-events-none",
-                ws.delay,
-              ].join(" ")}
-              role="button"
-            >
-              <IconComponent className="text-white" size={16} strokeWidth={2.5} />
-              <div className="mt-0.5 font-bold text-[6px] text-white">
-                {ws.name}
-              </div>
-            </div>
-          );
-        })}
+        {/* Create Submenu */}
+        <ToolbarSubmenu
+          buttons={createModeButtons}
+          isActive={expandLevel === "workspaces" && currentSubmenu === "create"}
+          animationState={getCreateAnimationState()}
+          bottomPosition="bottom-16"
+          expandLevel={expandLevel}
+          onItemClick={handleCreateButtonClick}
+        />
 
-        {createMode && createModeButtons.map((ws, i) => {
-          const IconComponent = ws.icon;
-          const handleClick = () => {
-            if ('isCancel' in ws && ws.isCancel) {
-              setCreateMode(false);
-            } else {
-              onWorkspaceClick(ws.workspace);
-            }
-          };
-
-          return (
-            <div
-              key={i}
-              onClick={handleClick}
-              className={[
-                "absolute right-0 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transform-gpu transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:bg-white/20",
-                // Dynamic position matching Workspaces button
-                expandLevel === "workspaces" ? "bottom-16" : "bottom-32",
-                expandLevel === "workspaces" ? `${ws.shift} opacity-100` : "translate-x-0 opacity-0 pointer-events-none",
-                ws.delay,
-              ].join(" ")}
-              role="button"
-            >
-              <IconComponent className="text-white" size={16} strokeWidth={2.5} />
-              <div className="mt-0.5 font-bold text-[6px] text-white">
-                {ws.name}
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Settings items (horizontal slide from right to left) - follow Settings button position */}
-        {settingsButtons.map((setting, i) => {
-          const IconComponent = setting.icon;
-          return (
-            <div
-              key={i}
-              className={[
-                "absolute right-0 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transform-gpu transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:bg-white/20",
-                // Dynamic position matching Settings button
-                expandLevel === "settings" ? "bottom-16" : "bottom-32",
-                expandLevel === "settings" ? `${setting.shift} opacity-100` : "translate-x-0 opacity-0 pointer-events-none",
-                setting.delay,
-              ].join(" ")}
-              role="button"
-            >
-              <IconComponent className="text-white" size={16} strokeWidth={2.5} />
-              <div className="mt-0.5 font-bold text-[6px] text-white">
-                {setting.name}
-              </div>
-            </div>
-          );
-        })}
+        {/* Settings Submenu */}
+        <ToolbarSubmenu
+          buttons={settingsButtons}
+          isActive={expandLevel === "settings"}
+          animationState={getSettingsAnimationState()}
+          bottomPosition="bottom-16"
+          expandLevel={expandLevel}
+        />
       </div>
     </div>
   );
 }
-
