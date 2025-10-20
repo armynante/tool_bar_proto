@@ -1,6 +1,7 @@
 import { ToolbarButtonConfig, SubmenuAnimationState } from '../types/toolbar';
 
 interface ToolbarSubmenuProps {
+  submenuId: string;
   buttons: ToolbarButtonConfig[];
   isActive: boolean;
   animationState: SubmenuAnimationState;
@@ -10,6 +11,7 @@ interface ToolbarSubmenuProps {
 }
 
 export function ToolbarSubmenu({
+  submenuId,
   buttons,
   isActive,
   animationState,
@@ -29,10 +31,7 @@ export function ToolbarSubmenu({
     
     // When expanding or expanded, items slide out to their positions
     if (animationState === 'expanding' || animationState === 'expanded') {
-      if (isActive && expandLevel === 'workspaces') {
-        return `${button.shift} opacity-100`;
-      }
-      if (isActive && expandLevel === 'settings') {
+      if (isActive && (expandLevel === 'workspaces' || expandLevel === 'settings')) {
         return `${button.shift} opacity-100`;
       }
     }
@@ -47,7 +46,7 @@ export function ToolbarSubmenu({
         
         return (
           <div
-            key={i}
+            key={`${submenuId}-${i}`}
             onClick={() => onItemClick?.(button)}
             className={[
               "absolute right-0 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transform-gpu transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:bg-white/20",

@@ -97,3 +97,65 @@ export function useSubmenuTransition(
   };
 }
 
+interface UseNestedSubmenuNavigationReturn {
+  navigationPath: string[];
+  currentSubmenu: string | null;
+  navigateToSubmenu: (submenuId: string) => void;
+  navigateBack: () => void;
+  isTransitioning: boolean;
+  getParentLabel: () => string;
+}
+
+const LABEL_MAP: { [key: string]: string } = {
+  'create': 'Create',
+  'arrange': 'Arrange',
+};
+
+export function useNestedSubmenuNavigation(
+  transitionDuration: number = 300
+): UseNestedSubmenuNavigationReturn {
+  const [navigationPath, setNavigationPath] = useState<string[]>([]);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const navigateToSubmenu = useCallback((submenuId: string) => {
+    setIsTransitioning(true);
+    
+    setTimeout(() => {
+      setNavigationPath(prev => [...prev, submenuId]);
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, transitionDuration);
+    }, transitionDuration);
+  }, [transitionDuration]);
+
+  const navigateBack = useCallback(() => {
+    if (navigationPath.length === 0) return;
+    
+    setIsTransitioning(true);
+    
+    setTimeout(() => {
+      setNavigationPath(prev => prev.slice(0, -1));
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, transitionDuration);
+    }, transitionDuration);
+  }, [navigationPath.length, transitionDuration]);
+
+  const getParentLabel = useCallback(() => {
+    if (navigationPath.length === 0) return 'Workspaces';
+    const lastSubmenu = navigationPath[navigationPath.length - 1];
+    return LABEL_MAP[lastSubmenu] || 'Workspaces';
+  }, [navigationPath]);
+
+  const currentSubmenu = navigationPath.length > 0 ? navigationPath[navigationPath.length - 1] : null;
+
+  return {
+    navigationPath,
+    currentSubmenu,
+    navigateToSubmenu,
+    navigateBack,
+    isTransitioning,
+    getParentLabel,
+  };
+}
+

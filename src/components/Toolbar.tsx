@@ -1,8 +1,8 @@
-import { Plus, Home, MessageSquare, Box, Settings2, EyeOff, Move, X, Save, Grid, EyeOffIcon } from "lucide-react";
+import { Plus, Home, MessageSquare, Box, Settings2, EyeOff, Move, X, Save, Grid, EyeOffIcon, Maximize2, Maximize, Columns2, Columns3, Grid2X2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ToolbarSubmenu } from "./ToolbarSubmenu";
 import { ToolbarButtonConfig } from "../types/toolbar";
-import { useSubmenuTransition } from "../hooks/useSubmenuAnimation";
+import { useNestedSubmenuNavigation } from "../hooks/useSubmenuAnimation";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
@@ -21,17 +21,20 @@ export function Toolbar({
   onSettingsClick,
   onWorkspaceClick 
 }: ToolbarProps) {
-  const { currentSubmenu, switchToSubmenu, closeCurrentSubmenu } = useSubmenuTransition(300);
+  const { navigationPath, currentSubmenu, navigateToSubmenu, navigateBack, getParentLabel } = useNestedSubmenuNavigation(300);
 
   // Reset submenu when expandLevel changes
   useEffect(() => {
     if (expandLevel !== "workspaces") {
-      closeCurrentSubmenu();
+      // Reset navigation when leaving workspaces
+      while (navigationPath.length > 0) {
+        navigateBack();
+      }
     }
-  }, [expandLevel, closeCurrentSubmenu]);
+  }, [expandLevel, navigationPath.length, navigateBack]);
 
   const workspaceButtons: ToolbarButtonConfig[] = [
-    { name: "Create", workspace: "create", icon: Plus, shift: "-translate-x-16", delay: "delay-75" },
+    { name: "Create", workspace: "create", icon: Plus, shift: "-translate-x-16", delay: "delay-75", opensSubmenu: "create" },
     { name: "Main", workspace: "main", icon: Home, shift: "-translate-x-32", delay: "delay-150" },
     { name: "Interview", workspace: "interview", icon: MessageSquare, shift: "-translate-x-48", delay: "delay-[225ms]" },
     { name: "Nexus", workspace: "nexus", icon: Box, shift: "-translate-x-64", delay: "delay-300" },
@@ -40,8 +43,17 @@ export function Toolbar({
   const createModeButtons: ToolbarButtonConfig[] = [
     { name: "cancel", workspace: "create", icon: X, shift: "-translate-x-16", delay: "delay-75", isCancel: true },
     { name: "save", workspace: "create", icon: Save, shift: "-translate-x-32", delay: "delay-150" },
-    { name: "arrange", workspace: "create", icon: Grid, shift: "-translate-x-48", delay: "delay-[225ms]" },
+    { name: "arrange", workspace: "create", icon: Grid, shift: "-translate-x-48", delay: "delay-[225ms]", opensSubmenu: "arrange" },
     { name: "hide all", workspace: "create", icon: EyeOffIcon, shift: "-translate-x-64", delay: "delay-300" },
+  ];
+
+  const arrangeButtons: ToolbarButtonConfig[] = [
+    { name: "cancel", workspace: "arrange", icon: X, shift: "-translate-x-16", delay: "delay-75", isCancel: true },
+    { name: "center", workspace: "arrange", icon: Maximize2, shift: "-translate-x-32", delay: "delay-150" },
+    { name: "maximize", workspace: "arrange", icon: Maximize, shift: "-translate-x-48", delay: "delay-[225ms]" },
+    { name: "halves", workspace: "arrange", icon: Columns2, shift: "-translate-x-64", delay: "delay-300" },
+    { name: "quarters", workspace: "arrange", icon: Grid2X2, shift: "-translate-x-80", delay: "delay-[375ms]" },
+    { name: "thirds", workspace: "arrange", icon: Columns3, shift: "-translate-x-96", delay: "delay-[450ms]" },
   ];
 
   const settingsButtons: ToolbarButtonConfig[] = [
@@ -51,8 +63,8 @@ export function Toolbar({
   ];
 
   const handleWorkspaceButtonClick = (button: ToolbarButtonConfig) => {
-    if (button.name === "Create") {
-      switchToSubmenu("create");
+    if (button.opensSubmenu) {
+      navigateToSubmenu(button.opensSubmenu);
     } else if (button.workspace) {
       onWorkspaceClick(button.workspace);
     }
@@ -60,22 +72,38 @@ export function Toolbar({
 
   const handleCreateButtonClick = (button: ToolbarButtonConfig) => {
     if (button.isCancel) {
-      closeCurrentSubmenu();
+      navigateBack();
+    } else if (button.opensSubmenu) {
+      navigateToSubmenu(button.opensSubmenu);
+    } else if (button.workspace) {
+      onWorkspaceClick(button.workspace);
+    }
+  };
+
+  const handleArrangeButtonClick = (button: ToolbarButtonConfig) => {
+    if (button.isCancel) {
+      navigateBack();
     } else if (button.workspace) {
       onWorkspaceClick(button.workspace);
     }
   };
 
   const getWorkspaceAnimationState = () => {
-    if (currentSubmenu === "create") return "collapsing";
-    if (currentSubmenu === null && expandLevel === "workspaces") return "expanded";
+    if (navigationPath.length === 0 && expandLevel === "workspaces") return "expanded";
+    if (navigationPath.length > 0) return "collapsing";
     return "collapsed";
   };
 
   const getCreateAnimationState = () => {
-    if (currentSubmenu === "create") return "expanded";
-    if (currentSubmenu === null) return "collapsed";
+    if (currentSubmenu === "create" && navigationPath.length === 1) return "expanded";
+    if (currentSubmenu === "create") return "collapsing";
+    if (navigationPath.length === 0 || navigationPath[0] !== "create") return "collapsed";
     return "collapsing";
+  };
+
+  const getArrangeAnimationState = () => {
+    if (currentSubmenu === "arrange" && navigationPath.length === 2) return "expanded";
+    return "collapsed";
   };
 
   const getSettingsAnimationState = () => {
@@ -145,13 +173,14 @@ export function Toolbar({
           ].join(" ")}
           role="button"
         >
-          {currentSubmenu === "create" ? "Create" : "Workspaces"}
+          {getParentLabel()}
         </div>
 
         {/* Workspace Submenu */}
         <ToolbarSubmenu
+          submenuId="workspaces"
           buttons={workspaceButtons}
-          isActive={expandLevel === "workspaces" && currentSubmenu === null}
+          isActive={expandLevel === "workspaces" && navigationPath.length === 0}
           animationState={getWorkspaceAnimationState()}
           bottomPosition="bottom-16"
           expandLevel={expandLevel}
@@ -160,6 +189,7 @@ export function Toolbar({
 
         {/* Create Submenu */}
         <ToolbarSubmenu
+          submenuId="create"
           buttons={createModeButtons}
           isActive={expandLevel === "workspaces" && currentSubmenu === "create"}
           animationState={getCreateAnimationState()}
@@ -168,8 +198,20 @@ export function Toolbar({
           onItemClick={handleCreateButtonClick}
         />
 
+        {/* Arrange Submenu */}
+        <ToolbarSubmenu
+          submenuId="arrange"
+          buttons={arrangeButtons}
+          isActive={expandLevel === "workspaces" && currentSubmenu === "arrange"}
+          animationState={getArrangeAnimationState()}
+          bottomPosition="bottom-16"
+          expandLevel={expandLevel}
+          onItemClick={handleArrangeButtonClick}
+        />
+
         {/* Settings Submenu */}
         <ToolbarSubmenu
+          submenuId="settings"
           buttons={settingsButtons}
           isActive={expandLevel === "settings"}
           animationState={getSettingsAnimationState()}

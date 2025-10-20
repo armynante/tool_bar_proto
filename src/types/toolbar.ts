@@ -7,6 +7,7 @@ export interface ToolbarButtonConfig {
   shift: string;
   delay: string;
   isCancel?: boolean;
+  opensSubmenu?: string; // ID of submenu this button opens
   onClick?: () => void;
 }
 
@@ -21,5 +22,16 @@ export type SubmenuAnimationState = 'collapsed' | 'collapsing' | 'expanding' | '
 export interface SubmenuState {
   animationState: SubmenuAnimationState;
   isActive: boolean;
+}
+
+export interface SubmenuNavigation {
+  path: string[]; // Navigation path e.g., ['create', 'arrange']
+  currentSubmenu: string | null;
+  parentLabel: string;
+}
+
+export interface NestedSubmenuConfig extends SubmenuConfig {
+  id: string;
+  parentSubmenuId?: string;
 }
 
