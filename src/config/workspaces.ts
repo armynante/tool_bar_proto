@@ -5,21 +5,27 @@ import notesScreenshot from '../assets/notes-screenshot.png';
 export const DEFAULT_APPS: AppState[] = [
   {
     id: 'hacker-news',
+    isLaunched: false,
     isVisible: false,
     position: { x: 100, y: 100 },
     size: { width: 800, height: 500 },
     title: 'Hacker News',
     imageSrc: hackerNewsScreenshot,
-    imageAlt: 'Hacker News Screenshot'
+    imageAlt: 'Hacker News Screenshot',
+    zIndex: 1,
+    dockIcon: '🔶' // Orange diamond for Hacker News
   },
   {
     id: 'todo-list',
+    isLaunched: false,
     isVisible: false,
     position: { x: 300, y: 200 },
     size: { width: 600, height: 700 },
     title: 'Todo List',
     imageSrc: notesScreenshot,
-    imageAlt: 'Todo List Screenshot'
+    imageAlt: 'Todo List Screenshot',
+    zIndex: 1,
+    dockIcon: '✅' // Check mark for todo/tasks
   }
 ];
 

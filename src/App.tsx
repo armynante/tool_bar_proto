@@ -18,8 +18,11 @@ interface WindowProps {
   title: string;
   imageSrc: string;
   imageAlt: string;
-  onClose: (id: string) => void;
+  zIndex: number;
+  onQuit: (id: string) => void;
+  onMinimize: (id: string) => void;
   onUpdate: (id: string, updates: Partial<AppState>) => void;
+  onFocus: (id: string) => void;
 }
 
 function DraggableWindow({ 
@@ -32,8 +35,11 @@ function DraggableWindow({
   title,
   imageSrc,
   imageAlt,
-  onClose,
-  onUpdate
+  zIndex,
+  onQuit,
+  onMinimize,
+  onUpdate,
+  onFocus
 }: WindowProps) {
   const [position, setPosition] = useState({ x: initialX, y: initialY });
   const [size, setSize] = useState({ width: initialWidth, height: initialHeight });
@@ -121,21 +127,33 @@ function DraggableWindow({
         width: `${size.width}px`,
         height: `${size.height}px`,
         cursor: isDragging ? 'grabbing' : 'grab',
+        zIndex: zIndex,
       }}
-      onMouseDown={handleMouseDown}
+      onMouseDown={(e) => {
+        handleMouseDown(e);
+        onFocus(id);
+      }}
     >
       {/* Title bar */}
       <div className="flex justify-between items-center bg-white/5 px-4 py-2 border-white/10 border-b">
         <span className="font-medium text-white text-sm">{title}</span>
         <div className="flex gap-2">
-          <div className="bg-yellow-500/80 hover:bg-yellow-500 rounded-full w-3 h-3"></div>
+          <div 
+            className="bg-yellow-500/80 hover:bg-yellow-500 rounded-full w-3 h-3 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMinimize(id);
+            }}
+            title="Minimize"
+          ></div>
           <div className="bg-green-500/80 hover:bg-green-500 rounded-full w-3 h-3"></div>
           <div 
             className="bg-red-500/80 hover:bg-red-500 rounded-full w-3 h-3 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
-              onClose(id);
+              onQuit(id);
             }}
+            title="Quit"
           ></div>
         </div>
       </div>
@@ -184,15 +202,82 @@ export function App() {
     }));
   };
 
-  // Handler to close an app
-  const handleAppClose = (id: string) => {
+  // Handler to quit an app (red X button)
+  const handleAppQuit = (id: string) => {
+    setAppRegistry(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        isLaunched: false,
+        isVisible: false
+      }
+    }));
+  };
+
+  // Handler to minimize an app (yellow button)
+  const handleAppMinimize = (id: string) => {
     setAppRegistry(prev => ({
       ...prev,
       [id]: {
         ...prev[id],
         isVisible: false
+        // isLaunched stays true
       }
     }));
+  };
+
+  // Handler to bring app to front
+  const handleAppFocus = (id: string) => {
+    setAppRegistry(prev => {
+      const maxZ = Math.max(...Object.values(prev).map(app => app.zIndex));
+      return {
+        ...prev,
+        [id]: {
+          ...prev[id],
+          zIndex: maxZ + 1
+        }
+      };
+    });
+  };
+
+  // Handler for dock icon click
+  const handleDockClick = (id: string) => {
+    setAppRegistry(prev => {
+      const app = prev[id];
+      const maxZ = Math.max(...Object.values(prev).map(a => a.zIndex));
+      
+      if (!app.isLaunched) {
+        // Launch the app
+        return {
+          ...prev,
+          [id]: {
+            ...prev[id],
+            isLaunched: true,
+            isVisible: true,
+            zIndex: maxZ + 1
+          }
+        };
+      } else if (!app.isVisible) {
+        // Show minimized app
+        return {
+          ...prev,
+          [id]: {
+            ...prev[id],
+            isVisible: true,
+            zIndex: maxZ + 1
+          }
+        };
+      } else {
+        // Already visible, just bring to front
+        return {
+          ...prev,
+          [id]: {
+            ...prev[id],
+            zIndex: maxZ + 1
+          }
+        };
+      }
+    });
   };
 
   // Handler for workspace button clicks
@@ -202,13 +287,19 @@ export function App() {
 
     setAppRegistry(prev => {
       const updated = { ...prev };
+      const maxZ = Math.max(...Object.values(prev).map(app => app.zIndex));
+      let currentZ = maxZ;
+      
       config.apps.forEach(appConfig => {
         if (updated[appConfig.id]) {
+          currentZ += 1;
           updated[appConfig.id] = {
             ...updated[appConfig.id],
+            isLaunched: true,
             isVisible: true,
             position: appConfig.position,
-            size: appConfig.size
+            size: appConfig.size,
+            zIndex: currentZ
           };
         }
       });
@@ -250,10 +341,38 @@ export function App() {
             title={app.title}
             imageSrc={app.imageSrc}
             imageAlt={app.imageAlt}
-            onClose={handleAppClose}
+            zIndex={app.zIndex}
+            onQuit={handleAppQuit}
+            onMinimize={handleAppMinimize}
             onUpdate={handleAppUpdate}
+            onFocus={handleAppFocus}
           />
         ))}
+        
+        {/* macOS-style Dock */}
+        <div className="bottom-2 left-1/2 z-50 fixed flex items-end gap-2 bg-white/10 shadow-2xl backdrop-blur-2xl px-3 py-2 border border-white/20 rounded-2xl -translate-x-1/2 transform">
+          {Object.values(appRegistry).map(app => (
+            <div
+              key={app.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDockClick(app.id);
+              }}
+              className="group relative hover:scale-110 transition-all hover:-translate-y-2 duration-200 cursor-pointer"
+              title={app.title}
+            >
+              <div className="flex justify-center items-center bg-white/20 shadow-lg backdrop-blur-sm border-2 border-white/40 rounded-xl w-14 h-14 overflow-hidden text-4xl">
+                {/* Use the app's dock icon (emoji) */}
+                {app.dockIcon || '📱'}
+              </div>
+              {/* Indicator dot for launched apps only */}
+              {app.isLaunched && (
+                <div className="-bottom-1 left-1/2 absolute bg-white/80 shadow-lg rounded-full w-1.5 h-1.5 -translate-x-1/2 transform"></div>
+              )}
+            </div>
+          ))}
+        </div>
+
         <div className="flex justify-end items-end p-8 w-full h-svh">
           {/* Toolbar container */}
           <div className="relative">
