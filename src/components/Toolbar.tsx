@@ -146,7 +146,7 @@ export function Toolbar({
   return (
     <div className="flex justify-end items-end p-8 w-full h-svh">
       {/* Toolbar container */}
-      <div className="relative">
+      <div className="relative z-[9999]">
         {/* Main launcher button with X when expanded */}
         <div
           id="toolbar-launcher"
@@ -154,8 +154,8 @@ export function Toolbar({
           aria-pressed={expandLevel !== "collapsed"}
           onClick={onLauncherClick}
           className={[
-            "absolute right-0 bottom-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 cursor-pointer transition-all duration-300 z-20 rounded-xl shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-2xl font-bold",
-            expandLevel === "collapsed" ? "w-12 h-3 hover:scale-150" : "w-12 h-12",
+            "absolute right-0 bottom-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 cursor-pointer transition-all duration-300 z-[9999] rounded-2xl shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-2xl font-bold",
+            expandLevel === "collapsed" ? "w-12 h-3 rounded-full hover:scale-150" : "w-12 h-12",
           ].join(" ")}
         >
           {expandLevel !== "collapsed" && "×"}
@@ -179,7 +179,7 @@ export function Toolbar({
         <div
           onClick={onSettingsClick}
           className={[
-            "absolute right-0 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-10 hover:bg-white/30",
+            "absolute right-0 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-[9999]hover:bg-white/30",
             // Dynamic bottom position
             expandLevel === "settings" ? "bottom-16" : "bottom-32",
             expandLevel === "settings" ? "bg-white/20 opacity-100" : "bg-white/10",
@@ -204,7 +204,7 @@ export function Toolbar({
               onClick={() => isVisible && handleAppArrangeButtonClick(button)}
               className={[
                 "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
-                "bottom-0 z-10",
+                "bottom-0 z-[9999]",
                 isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
               ].join(" ")}
               style={{
@@ -232,7 +232,7 @@ export function Toolbar({
               onClick={() => isVisible && handleAppArrangeButtonClick(button)}
               className={[
                 "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
-                "bottom-0 z-10",
+                "bottom-0 z-[9999]",
                 isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
               ].join(" ")}
               style={{
@@ -260,7 +260,7 @@ export function Toolbar({
               onClick={() => isVisible && handleAppArrangeButtonClick(button)}
               className={[
                 "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
-                "bottom-0 z-10",
+                "bottom-0 z-[9999]",
                 isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
               ].join(" ")}
               style={{
@@ -288,7 +288,7 @@ export function Toolbar({
               onClick={() => isVisible && handleAppArrangeButtonClick(button)}
               className={[
                 "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
-                "bottom-0 z-10",
+                "bottom-0 z-[9999]",
                 isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
               ].join(" ")}
               style={{
@@ -308,7 +308,7 @@ export function Toolbar({
         <div
           onClick={onWorkspacesClick}
           className={[
-            "absolute right-0 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-10 hover:bg-white/30",
+            "absolute right-0 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-[9999]hover:bg-white/30",
             // Dynamic bottom position - when workspaces is expanded, it's at bottom-16, otherwise bottom-32 when settings is expanded, or stays at bottom-16 in menu
             expandLevel === "workspaces" ? "bottom-16 bg-white/20 opacity-100" : "",
             expandLevel === "settings" ? "bottom-32 bg-white/10 opacity-50! hover:opacity-100!" : "",
