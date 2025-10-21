@@ -1,4 +1,6 @@
 import { ToolbarButtonConfig, SubmenuAnimationState } from '../types/toolbar';
+import { useState } from 'react';
+import { Edit } from 'lucide-react';
 
 interface ToolbarSubmenuProps {
   submenuId: string;
@@ -31,6 +33,8 @@ export function ToolbarSubmenu({
   expandLevel,
   onItemClick,
 }: ToolbarSubmenuProps) {
+  const [hoveredButtonIndex, setHoveredButtonIndex] = useState<number | null>(null);
+
   const getAnimationClasses = (index: number) => {
     // When collapsed or collapsing, items should be hidden at center
     if (animationState === 'collapsed' || animationState === 'collapsing') {
@@ -47,16 +51,26 @@ export function ToolbarSubmenu({
     return 'translate-x-0 opacity-0 pointer-events-none';
   };
 
+  const handleEditClick = (e: React.MouseEvent, button: ToolbarButtonConfig) => {
+    e.stopPropagation();
+    onItemClick?.({ ...button, workspace: 'edit', name: 'Edit' });
+  };
+
   return (
     <>
       {buttons.map((button, i) => {
         const IconComponent = button.icon;
         const transformDistance = getTransformDistance(i);
         const animationDelay = getAnimationDelay(i);
+        const isHovered = hoveredButtonIndex === i;
+        // Show edit button only for workspaces (not for create button which has opensSubmenu)
+        const showEditButton = isHovered && !button.opensSubmenu && submenuId === 'workspaces';
         
         return (
           <div
             key={`${submenuId}-${i}`}
+            onMouseEnter={() => setHoveredButtonIndex(i)}
+            onMouseLeave={() => setHoveredButtonIndex(null)}
             onClick={() => onItemClick?.(button)}
             className={[
               "absolute right-0 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transform-gpu transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:bg-white/20",
@@ -74,6 +88,21 @@ export function ToolbarSubmenu({
             <IconComponent className="text-white" size={16} strokeWidth={2.5} />
             <div className="mt-0.5 font-bold text-[6px] text-white">
               {button.name}
+            </div>
+            
+            {/* Edit pill button - appears on hover */}
+            <div
+              onClick={(e) => handleEditClick(e, button)}
+              className={[
+                "absolute -bottom-6 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-bold text-white cursor-pointer transition-all duration-200 flex items-center gap-1",
+                showEditButton 
+                  ? "bg-white/20 hover:bg-white/40 opacity-70 hover:opacity-100" 
+                  : "bg-white/10 opacity-0 pointer-events-none"
+              ].join(" ")}
+              role="button"
+            >
+              <Edit size={10} strokeWidth={2.5} />
+              <span>edit</span>
             </div>
           </div>
         );

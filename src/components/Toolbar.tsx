@@ -1,4 +1,4 @@
-import { Plus, Home, MessageSquare, Box, X, Save, EyeOffIcon, Maximize2, Maximize, Columns2, Columns3, Grid2X2, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Grid, Eye, Edit } from "lucide-react";
+import { Plus, Home, MessageSquare, Box, X, Save, EyeOffIcon, Maximize2, Maximize, Columns2, Columns3, Grid2X2, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Grid, Eye } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ToolbarSubmenu } from "./ToolbarSubmenu";
 import { ToolbarButtonConfig } from "../types/toolbar";
@@ -48,7 +48,6 @@ export function Toolbar({
     { name: "Main", workspace: "main", icon: Home },
     { name: "Interview", workspace: "interview", icon: MessageSquare },
     { name: "Nexus", workspace: "nexus", icon: Box },
-    { name: "Edit", workspace: "edit", icon: Edit },
   ];
 
   const createModeButtons: ToolbarButtonConfig[] = [
