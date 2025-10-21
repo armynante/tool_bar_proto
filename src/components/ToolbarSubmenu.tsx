@@ -1,6 +1,20 @@
 import { ToolbarButtonConfig, SubmenuAnimationState } from '../types/toolbar';
 import { useState } from 'react';
-import { Edit } from 'lucide-react';
+import { Edit, ArrowLeftRight, ArrowUpDown, Columns3, Columns } from 'lucide-react';
+
+interface SplitOption {
+  name: string;
+  icon: typeof ArrowLeftRight;
+  workspace: string;
+  title: string;
+}
+
+const splitOptions: SplitOption[] = [
+  { name: "L/R", icon: ArrowLeftRight, workspace: "split-left-right", title: "Left / Right Split" },
+  { name: "T/B", icon: ArrowUpDown, workspace: "split-top-bottom", title: "Top / Bottom Split" },
+  { name: "3V", icon: Columns3, workspace: "thirds-vertical", title: "Thirds Vertical" },
+  { name: "3H", icon: Columns, workspace: "thirds-horizontal", title: "Thirds Horizontal" },
+];
 
 interface ToolbarSubmenuProps {
   submenuId: string;
@@ -34,6 +48,7 @@ export function ToolbarSubmenu({
   onItemClick,
 }: ToolbarSubmenuProps) {
   const [hoveredButtonIndex, setHoveredButtonIndex] = useState<number | null>(null);
+  const [splitsMenuOpen, setSplitsMenuOpen] = useState(false);
 
   const getAnimationClasses = (index: number) => {
     // When collapsed or collapsing, items should be hidden at center
@@ -65,6 +80,9 @@ export function ToolbarSubmenu({
         const isHovered = hoveredButtonIndex === i;
         // Show edit button only for workspaces (not for create button which has opensSubmenu)
         const showEditButton = isHovered && !button.opensSubmenu && submenuId === 'workspaces';
+        // Check if this is the splits button
+        const isSplitsButton = button.workspace === 'splits';
+        const showSplitOptions = (isHovered || splitsMenuOpen) && isSplitsButton && submenuId === 'layouts';
         
         return (
           <div
@@ -88,8 +106,18 @@ export function ToolbarSubmenu({
               className="relative"
             >
               <div
-                onClick={() => onItemClick?.(button)}
-                className="flex flex-col justify-center items-center bg-white/10 hover:bg-white/20 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer"
+                onClick={() => {
+                  if (isSplitsButton) {
+                    // Toggle the splits menu instead of closing
+                    setSplitsMenuOpen(!splitsMenuOpen);
+                  } else {
+                    onItemClick?.(button);
+                  }
+                }}
+                className={[
+                  "flex flex-col justify-center items-center bg-white/10 hover:bg-white/20 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
+                  isSplitsButton && splitsMenuOpen ? "opacity-50" : "opacity-100"
+                ].join(" ")}
                 role="button"
               >
               <IconComponent className="text-white" size={16} strokeWidth={2.5} />
@@ -101,7 +129,7 @@ export function ToolbarSubmenu({
             {/* Invisible bridge to maintain hover state in the gap */}
             <div className="w-full h-1" />
             
-            {/* Edit pill button - appears on hover */}
+            {/* Edit pill button - appears on hover for workspace buttons */}
               <div
                 onClick={(e) => {
                   e.stopPropagation();
@@ -118,6 +146,43 @@ export function ToolbarSubmenu({
                 <Edit size={10} strokeWidth={2.5} />
                 <span>edit</span>
               </div>
+              
+              {/* Split options - slide up when hovering splits button */}
+              {isSplitsButton && splitOptions.map((splitOption, idx) => {
+                const SplitIcon = splitOption.icon;
+                const bottomDistance = (idx + 1) * 3.75; // 3.75rem spacing between options (48px button + 12px gap)
+                // When just hovering, use 50% opacity. When menu is open (clicked), use 100% opacity
+                const optionOpacity = showSplitOptions 
+                  ? (splitsMenuOpen ? "opacity-100" : "opacity-50") 
+                  : "opacity-0";
+                
+                return (
+                  <div
+                    key={splitOption.workspace}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Keep the menu open so you can toggle between different split layouts
+                      onItemClick?.({ ...button, workspace: splitOption.workspace, name: splitOption.name });
+                    }}
+                    className={[
+                      "absolute left-0 flex flex-col justify-center items-center bg-white/10 hover:bg-white/30 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
+                      optionOpacity,
+                      showSplitOptions ? "pointer-events-auto" : "pointer-events-none"
+                    ].join(" ")}
+                    style={{
+                      bottom: showSplitOptions ? `${bottomDistance}rem` : '0',
+                      transitionDelay: showSplitOptions ? `${idx * 50}ms` : `${(splitOptions.length - idx) * 50}ms`,
+                    }}
+                    role="button"
+                    title={splitOption.title}
+                  >
+                    <SplitIcon className="text-white" size={16} strokeWidth={2.5} />
+                    <div className="mt-0.5 font-bold text-[6px] text-white">
+                      {splitOption.name}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );

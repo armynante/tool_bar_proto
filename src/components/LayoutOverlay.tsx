@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
-export type LayoutType = "quarters" | "splits" | "two-quarters-left" | null;
+export type LayoutType = 
+  | "quarters" | "quarters-small" | "quarters-large"
+  | "splits" 
+  | "two-quarters-left" | "two-quarters-right" | "two-quarters-top" | "two-quarters-bottom"
+  | "split-left-right" | "split-top-bottom" 
+  | "thirds-vertical" | "thirds-horizontal" 
+  | null;
 
 export interface Zone {
   id: string;
@@ -132,6 +138,110 @@ export function LayoutOverlay({ layoutType, activeZone, onClose, onZonesReady }:
           },
         ];
         break;
+
+      case "split-left-right":
+        // Left and right split (50/50)
+        newZones = [
+          {
+            id: "half-left",
+            x: padding,
+            y: padding,
+            width: screenWidth / 2 - padding * 1.5,
+            height: screenHeight - padding * 2,
+            label: "Left Half",
+          },
+          {
+            id: "half-right",
+            x: screenWidth / 2 + padding / 2,
+            y: padding,
+            width: screenWidth / 2 - padding * 1.5,
+            height: screenHeight - padding * 2,
+            label: "Right Half",
+          },
+        ];
+        break;
+
+      case "split-top-bottom":
+        // Top and bottom split (50/50)
+        newZones = [
+          {
+            id: "half-top",
+            x: padding,
+            y: padding,
+            width: screenWidth - padding * 2,
+            height: screenHeight / 2 - padding * 1.5,
+            label: "Top Half",
+          },
+          {
+            id: "half-bottom",
+            x: padding,
+            y: screenHeight / 2 + padding / 2,
+            width: screenWidth - padding * 2,
+            height: screenHeight / 2 - padding * 1.5,
+            label: "Bottom Half",
+          },
+        ];
+        break;
+
+      case "thirds-vertical":
+        // Vertical thirds (same as current "splits")
+        newZones = [
+          {
+            id: "third-left",
+            x: padding,
+            y: padding,
+            width: screenWidth / 3 - padding,
+            height: screenHeight - padding * 2,
+            label: "Left Third",
+          },
+          {
+            id: "third-center",
+            x: screenWidth / 3 + padding / 2,
+            y: padding,
+            width: screenWidth / 3 - padding,
+            height: screenHeight - padding * 2,
+            label: "Center Third",
+          },
+          {
+            id: "third-right",
+            x: (screenWidth / 3) * 2 + padding / 2,
+            y: padding,
+            width: screenWidth / 3 - padding,
+            height: screenHeight - padding * 2,
+            label: "Right Third",
+          },
+        ];
+        break;
+
+      case "thirds-horizontal":
+        // Horizontal thirds
+        newZones = [
+          {
+            id: "third-top",
+            x: padding,
+            y: padding,
+            width: screenWidth - padding * 2,
+            height: screenHeight / 3 - padding,
+            label: "Top Third",
+          },
+          {
+            id: "third-middle",
+            x: padding,
+            y: screenHeight / 3 + padding / 2,
+            width: screenWidth - padding * 2,
+            height: screenHeight / 3 - padding,
+            label: "Middle Third",
+          },
+          {
+            id: "third-bottom",
+            x: padding,
+            y: (screenHeight / 3) * 2 + padding / 2,
+            width: screenWidth - padding * 2,
+            height: screenHeight / 3 - padding,
+            label: "Bottom Third",
+          },
+        ];
+        break;
     }
 
     setZones(newZones);
@@ -171,7 +281,7 @@ export function LayoutOverlay({ layoutType, activeZone, onClose, onZonesReady }:
       {/* Done button */}
       <div
         onClick={onClose}
-        className="right-8 bottom-8 z-[10000] fixed flex flex-col justify-center items-center gap-0.5 bg-white/10 hover:bg-white/20 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 text-white transition-all duration-300 cursor-pointer pointer-events-auto"
+        className="right-8 bottom-8 z-10000 fixed flex flex-col justify-center items-center gap-0.5 bg-white/10 hover:bg-white/20 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 text-white transition-all duration-300 cursor-pointer pointer-events-auto"
         role="button"
         title="Close Layout Mode"
       >
