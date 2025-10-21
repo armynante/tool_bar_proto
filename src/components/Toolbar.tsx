@@ -1,4 +1,4 @@
-import { Plus, Home, MessageSquare, Box, Settings2, EyeOff, Move, X, Save, Grid, EyeOffIcon, Maximize2, Maximize, Columns2, Columns3, Grid2X2, ArrowLeft, ArrowRight, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Home, MessageSquare, Box, X, Save, EyeOffIcon, Maximize2, Maximize, Columns2, Columns3, Grid2X2, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Grid, Eye, Edit } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ToolbarSubmenu } from "./ToolbarSubmenu";
 import { ToolbarButtonConfig } from "../types/toolbar";
@@ -48,12 +48,15 @@ export function Toolbar({
     { name: "Main", workspace: "main", icon: Home },
     { name: "Interview", workspace: "interview", icon: MessageSquare },
     { name: "Nexus", workspace: "nexus", icon: Box },
+    { name: "Edit", workspace: "edit", icon: Edit },
   ];
 
   const createModeButtons: ToolbarButtonConfig[] = [
     { name: "cancel", workspace: "create", icon: X, isCancel: true },
     { name: "save", workspace: "create", icon: Save },
     { name: "hide all", workspace: "create", icon: EyeOffIcon },
+    { name: "show all", workspace: "show-all", icon: Eye },
+    { name: "layouts", workspace: "layouts", icon: Grid },
   ];
 
   // Main arrangement buttons for focused apps - appear at bottom when app is selected
@@ -90,11 +93,6 @@ export function Toolbar({
     { name: "right", workspace: "third-right", icon: ArrowRight, title: "Right Third" },
   ];
 
-  const settingsButtons: ToolbarButtonConfig[] = [
-    { name: "Edit", icon: Settings2 },
-    { name: "Hide", icon: EyeOff },
-    { name: "Move", icon: Move },
-  ];
 
   const handleWorkspaceButtonClick = (button: ToolbarButtonConfig) => {
     if (button.opensSubmenu) {
@@ -138,15 +136,11 @@ export function Toolbar({
     return "collapsing";
   };
 
-  const getSettingsAnimationState = () => {
-    if (expandLevel === "settings") return "expanded";
-    return "collapsed";
-  };
 
   return (
     <div className="flex justify-end items-end p-8 w-full h-svh">
       {/* Toolbar container */}
-      <div className="relative z-[9999]">
+      <div className="z-[9999] relative">
         {/* Main launcher button with X when expanded */}
         <div
           id="toolbar-launcher"
@@ -154,26 +148,13 @@ export function Toolbar({
           aria-pressed={expandLevel !== "collapsed"}
           onClick={onLauncherClick}
           className={[
-            "absolute right-0 bottom-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 cursor-pointer transition-all duration-300 z-[9999] rounded-2xl shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-2xl font-bold",
+            "absolute right-0 bottom-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 cursor-pointer transition-all duration-300 z-[9999] rounded-xl shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-2xl font-bold",
             expandLevel === "collapsed" ? "w-12 h-3 rounded-full hover:scale-150" : "w-12 h-12",
           ].join(" ")}
         >
           {expandLevel !== "collapsed" && "×"}
         </div>
 
-        {/* Utilities button */}
-        <div
-          className={[
-            "absolute right-0 bottom-48 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold hover:bg-white/20",
-            expandLevel === "workspaces" ? "opacity-50! translate-y-0 delay-0 hover:opacity-100!" : "",
-            expandLevel === "settings" ? "opacity-50! translate-y-0 delay-0 hover:opacity-100!" : "",
-            expandLevel === "menu" ? "opacity-100! translate-y-0 delay-0" : "",
-            expandLevel === "collapsed" ? "opacity-0 translate-y-4 pointer-events-none" : "",
-          ].join(" ")}
-          role="button"
-        >
-          Utilities
-        </div>
 
         {/* Settings button - dynamic position based on expand level */}
         <div
@@ -215,7 +196,7 @@ export function Toolbar({
               title={button.title || button.name}
             >
               <IconComponent size={16} strokeWidth={2.5} />
-              <span className="text-[8px] font-bold">{button.name}</span>
+              <span className="font-bold text-[8px]">{button.name}</span>
             </div>
           );
         })}
@@ -243,7 +224,7 @@ export function Toolbar({
               title={button.title || button.name}
             >
               <IconComponent size={16} strokeWidth={2.5} />
-              <span className="text-[8px] font-bold">{button.name}</span>
+              <span className="font-bold text-[8px]">{button.name}</span>
             </div>
           );
         })}
@@ -271,7 +252,7 @@ export function Toolbar({
               title={button.title || button.name}
             >
               <IconComponent size={16} strokeWidth={2.5} />
-              <span className="text-[8px] font-bold">{button.name}</span>
+              <span className="font-bold text-[8px]">{button.name}</span>
             </div>
           );
         })}
@@ -299,7 +280,7 @@ export function Toolbar({
               title={button.title || button.name}
             >
               <IconComponent size={16} strokeWidth={2.5} />
-              <span className="text-[8px] font-bold">{button.name}</span>
+              <span className="font-bold text-[8px]">{button.name}</span>
             </div>
           );
         })}
@@ -343,15 +324,6 @@ export function Toolbar({
         />
 
 
-        {/* Settings Submenu */}
-        <ToolbarSubmenu
-          submenuId="settings"
-          buttons={settingsButtons}
-          isActive={expandLevel === "settings"}
-          animationState={getSettingsAnimationState()}
-          bottomPosition="bottom-16"
-          expandLevel={expandLevel}
-        />
       </div>
     </div>
   );
