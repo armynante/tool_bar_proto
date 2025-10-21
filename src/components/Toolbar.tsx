@@ -444,7 +444,7 @@ export function Toolbar({
           aria-pressed={expandLevel !== "collapsed"}
           onClick={onLauncherClick}
           className={[
-            "absolute right-0 bottom-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 cursor-pointer transition-all duration-300 z-[9999] rounded-xl shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-2xl font-bold",
+            "absolute right-0 bottom-0 flex items-center justify-center bg-black/80 backdrop-blur-[27px] outline outline-white/30 cursor-pointer transition-all duration-300 z-[9999] rounded-xl shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-2xl font-bold hover:bg-black/90",
             expandLevel === "collapsed" ? "w-12 h-3 rounded-full hover:scale-150" : "w-12 h-12",
           ].join(" ")}
         >
@@ -456,10 +456,10 @@ export function Toolbar({
         <div
           onClick={onSettingsClick}
           className={[
-            "absolute right-0 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-[9999]hover:bg-white/30",
+            "absolute right-0 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-[9999] hover:bg-black/90",
             // Dynamic bottom position
             expandLevel === "settings" ? "bottom-16" : "bottom-32",
-            expandLevel === "settings" ? "bg-white/20 opacity-100" : "bg-white/10",
+            expandLevel === "settings" ? "bg-black/90 opacity-100" : "bg-black/80",
             expandLevel === "workspaces" ? "opacity-50! translate-y-0 delay-75 hover:opacity-100!" : "",
             expandLevel === "menu" ? "opacity-100! translate-y-0 delay-75" : "",
             expandLevel === "collapsed" ? "opacity-0 translate-y-4 pointer-events-none" : "",
@@ -481,7 +481,7 @@ export function Toolbar({
               key={`arrange-${i}`}
               onClick={() => isVisible && handleAppArrangeButtonClick(button)}
               className={[
-                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-black/80 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-black/90",
                 "bottom-0 z-[9999]",
                 isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
               ].join(" ")}
@@ -509,7 +509,7 @@ export function Toolbar({
               key={`halves-${i}`}
               onClick={() => isVisible && handleAppArrangeButtonClick(button)}
               className={[
-                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-black/80 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-black/90",
                 "bottom-0 z-[9999]",
                 isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
               ].join(" ")}
@@ -537,7 +537,7 @@ export function Toolbar({
               key={`quarters-${i}`}
               onClick={() => isVisible && handleAppArrangeButtonClick(button)}
               className={[
-                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-black/80 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-black/90",
                 "bottom-0 z-[9999]",
                 isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
               ].join(" ")}
@@ -565,7 +565,7 @@ export function Toolbar({
               key={`thirds-${i}`}
               onClick={() => isVisible && handleAppArrangeButtonClick(button)}
               className={[
-                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-black/80 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-black/90",
                 "bottom-0 z-[9999]",
                 isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
               ].join(" ")}
@@ -586,11 +586,11 @@ export function Toolbar({
         <div
           onClick={onWorkspacesClick}
           className={[
-            "absolute right-0 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-[9999]hover:bg-white/30",
+            "absolute right-0 flex items-center justify-center backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white text-[7px] font-bold leading-tight z-[9999] hover:bg-black/90",
             // Dynamic bottom position - when workspaces is expanded, it's at bottom-16, otherwise bottom-32 when settings is expanded, or stays at bottom-16 in menu
-            expandLevel === "workspaces" ? "bottom-16 bg-white/20 opacity-100" : "",
-            expandLevel === "settings" ? "bottom-32 bg-white/10 opacity-50! hover:opacity-100!" : "",
-            expandLevel === "menu" ? "bottom-16 bg-white/10 opacity-100 delay-150" : "",
+            expandLevel === "workspaces" ? "bottom-16 bg-black/90 opacity-100" : "",
+            expandLevel === "settings" ? "bottom-32 bg-black/80 opacity-50! hover:opacity-100!" : "",
+            expandLevel === "menu" ? "bottom-16 bg-black/80 opacity-100 delay-150" : "",
             expandLevel === "collapsed" ? "opacity-0 pointer-events-none" : "",
           ].join(" ")}
           role="button"
@@ -634,7 +634,7 @@ export function Toolbar({
 
         {/* Save Input Box - shown above create buttons when save is clicked or when editing (but not when editing arrangement) */}
         {isSaveInputVisible && !isEditingArrangement && ((currentSubmenu === "create") || editingWorkspaceKey) && (
-          <div className="right-8 bottom-32 z-[9999] absolute bg-white/10 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] p-5 rounded-xl outline outline-white/30 w-[600px] transition-all duration-300">
+          <div className="right-8 bottom-32 z-[9999] absolute bg-black/70 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] p-5 rounded-xl outline outline-white/30 w-[600px] transition-all duration-300">
             <div className="space-y-4">
               {/* Top Row - Layout Name Input */}
               <div>
@@ -645,7 +645,7 @@ export function Toolbar({
                   onChange={(e) => setLayoutName(e.target.value.slice(0, 10))}
                   maxLength={10}
                   placeholder="Max 10 chars"
-                  className="bg-white/20 px-3 py-2 border border-white/30 focus:border-white/60 rounded-lg focus:outline-none w-full text-white placeholder:text-white/40 text-base"
+                  className="bg-black/40 px-3 py-2 border border-white/30 focus:border-white/60 rounded-lg focus:outline-none w-full text-white placeholder:text-white/40 text-base"
                 />
                 <div className="mt-1 text-white/60 text-xs">{layoutName.length}/10</div>
               </div>
@@ -663,8 +663,8 @@ export function Toolbar({
                         className={[
                           "w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer text-lg",
                           selectedIcon === emoji 
-                            ? "bg-white/40 scale-110 ring-2 ring-white" 
-                            : "bg-white/10 hover:bg-white/20"
+                            ? "bg-white/30 scale-110 ring-2 ring-white" 
+                            : "bg-black/40 hover:bg-black/60"
                         ].join(" ")}
                       >
                         {emoji}
@@ -680,8 +680,8 @@ export function Toolbar({
                         className={[
                           "w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer",
                           selectedIcon === `lucide:${IconComp.name}` 
-                            ? "bg-white/40 scale-110 ring-2 ring-white" 
-                            : "bg-white/10 hover:bg-white/20"
+                            ? "bg-white/30 scale-110 ring-2 ring-white" 
+                            : "bg-black/40 hover:bg-black/60"
                         ].join(" ")}
                       >
                         <IconComp size={16} className="text-white" strokeWidth={2.5} />
@@ -700,7 +700,7 @@ export function Toolbar({
                     .map(app => (
                       <div
                         key={app.id}
-                        className="flex justify-center items-center bg-white/10 rounded-lg w-9 h-9 text-lg"
+                        className="flex justify-center items-center bg-black/40 rounded-lg w-9 h-9 text-lg"
                         title={app.title}
                       >
                         {app.dockIcon || '📦'}
@@ -716,7 +716,7 @@ export function Toolbar({
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleCancelSave}
-                  className="flex flex-1 justify-center items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg font-bold text-white text-sm transition-all duration-200"
+                  className="flex flex-1 justify-center items-center gap-2 bg-black/60 hover:bg-black/80 px-4 py-2 rounded-lg font-bold text-white text-sm transition-all duration-200"
                 >
                   <X size={16} strokeWidth={2.5} />
                   Cancel
@@ -724,7 +724,7 @@ export function Toolbar({
                 {editingWorkspaceKey && !isEditingArrangement && (
                   <button
                     onClick={handleEditArrangement}
-                    className="flex flex-1 justify-center items-center gap-2 bg-blue-500/20 hover:bg-blue-500/30 px-4 py-2 rounded-lg font-bold text-white text-sm transition-all duration-200"
+                    className="flex flex-1 justify-center items-center gap-2 bg-blue-500/60 hover:bg-blue-500/80 px-4 py-2 rounded-lg font-bold text-white text-sm transition-all duration-200"
                   >
                     <Grid size={16} strokeWidth={2.5} />
                     Edit Arrangement
@@ -732,7 +732,7 @@ export function Toolbar({
                 )}
                 <button
                   onClick={handleSaveLayout}
-                  className="flex flex-1 justify-center items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg font-bold text-white text-sm transition-all duration-200"
+                  className="flex flex-1 justify-center items-center gap-2 bg-black/80 hover:bg-black/90 px-4 py-2 rounded-lg font-bold text-white text-sm transition-all duration-200"
                 >
                   <Save size={16} strokeWidth={2.5} />
                   {editingWorkspaceKey ? 'Update' : 'Save'}
@@ -747,14 +747,14 @@ export function Toolbar({
           <div className="bottom-8 left-1/2 z-[10000] fixed flex gap-3 -translate-x-1/2">
             <button
               onClick={handleCancelArrangementEdit}
-              className="flex justify-center items-center gap-2 bg-white/10 hover:bg-white/20 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] px-6 py-3 rounded-xl outline outline-white/30 font-bold text-white text-sm transition-all duration-200"
+              className="flex justify-center items-center gap-2 bg-black/60 hover:bg-black/80 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] px-6 py-3 rounded-xl outline outline-white/30 font-bold text-white text-sm transition-all duration-200"
             >
               <X size={18} strokeWidth={2.5} />
               Cancel
             </button>
             <button
               onClick={handleUpdateLayout}
-              className="flex justify-center items-center gap-2 bg-white/20 hover:bg-white/30 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] px-6 py-3 rounded-xl outline outline-white/30 font-bold text-white text-sm transition-all duration-200"
+              className="flex justify-center items-center gap-2 bg-black/80 hover:bg-black/90 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] px-6 py-3 rounded-xl outline outline-white/30 font-bold text-white text-sm transition-all duration-200"
             >
               <Save size={18} strokeWidth={2.5} />
               Update Layout

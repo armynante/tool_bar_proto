@@ -145,7 +145,7 @@ export function ToolbarSubmenu({
                   }
                 }}
                 className={[
-                  "flex flex-col justify-center items-center bg-white/10 hover:bg-white/20 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
+                  "flex flex-col justify-center items-center bg-black/80 hover:bg-black/90 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
                   (isSplitsButton && splitsMenuOpen) || (isQuartersButton && quartersMenuOpen) || (isTwoQuartersButton && twoQuartersMenuOpen) 
                     ? "opacity-50" 
                     : (isSaveInputVisible && submenuId === "create")
@@ -155,7 +155,7 @@ export function ToolbarSubmenu({
                 role="button"
               >
               {button.emoji ? (
-                <span className="text-white text-base">{button.emoji}</span>
+                <span className="text-base">{button.emoji}</span>
               ) : (
                 <IconComponent className="text-white" size={16} strokeWidth={2.5} />
               )}
@@ -176,8 +176,8 @@ export function ToolbarSubmenu({
                 className={[
                   "absolute top-full mt-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-bold text-white cursor-pointer transition-all duration-200 flex items-center gap-1 whitespace-nowrap",
                   showEditButton 
-                    ? "bg-white/20 hover:bg-white/40 opacity-70 hover:opacity-100" 
-                    : "bg-white/10 opacity-0 pointer-events-none"
+                    ? "bg-black/70 hover:bg-black/90 opacity-70 hover:opacity-100" 
+                    : "bg-black/40 opacity-0 pointer-events-none"
                 ].join(" ")}
                 role="button"
               >
@@ -203,7 +203,7 @@ export function ToolbarSubmenu({
                       onItemClick?.({ ...button, workspace: splitOption.workspace, name: splitOption.name });
                     }}
                     className={[
-                      "absolute left-0 flex flex-col justify-center items-center bg-white/10 hover:bg-white/30 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
+                      "absolute left-0 flex flex-col justify-center items-center bg-black/80 hover:bg-black/90 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
                       optionOpacity,
                       showSplitOptions ? "pointer-events-auto" : "pointer-events-none"
                     ].join(" ")}
@@ -238,7 +238,7 @@ export function ToolbarSubmenu({
                       onItemClick?.({ ...button, workspace: quartersOption.workspace, name: quartersOption.name });
                     }}
                     className={[
-                      "absolute left-0 flex flex-col justify-center items-center bg-white/10 hover:bg-white/30 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
+                      "absolute left-0 flex flex-col justify-center items-center bg-black/80 hover:bg-black/90 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
                       optionOpacity,
                       showQuartersOptions ? "pointer-events-auto" : "pointer-events-none"
                     ].join(" ")}
@@ -273,7 +273,7 @@ export function ToolbarSubmenu({
                       onItemClick?.({ ...button, workspace: twoQuartersOption.workspace, name: twoQuartersOption.name });
                     }}
                     className={[
-                      "absolute left-0 flex flex-col justify-center items-center bg-white/10 hover:bg-white/30 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
+                      "absolute left-0 flex flex-col justify-center items-center bg-black/80 hover:bg-black/90 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
                       optionOpacity,
                       showTwoQuartersOptions ? "pointer-events-auto" : "pointer-events-none"
                     ].join(" ")}
