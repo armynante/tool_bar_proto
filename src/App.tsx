@@ -30,6 +30,7 @@ interface WindowProps {
   onFocus: (id: string) => void;
   onDragOverZone?: (zoneId: string | null) => void;
   onSnapToZone?: (appId: string, zoneId: string) => void;
+  onDragStart?: () => void;
 }
 
 function DraggableWindow({
@@ -51,7 +52,8 @@ function DraggableWindow({
   onUpdate,
   onFocus,
   onDragOverZone,
-  onSnapToZone
+  onSnapToZone,
+  onDragStart
 }: WindowProps) {
   const [position, setPosition] = useState({ x: initialX, y: initialY });
   const [size, setSize] = useState({ width: initialWidth, height: initialHeight });
@@ -61,6 +63,7 @@ function DraggableWindow({
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const windowRef = useRef<HTMLDivElement>(null);
   const currentZoneRef = useRef<string | null>(null);
+  const hasNotifiedDragStartRef = useRef(false);
 
   // Use refs to capture latest position/size values for the mouseUp handler
   const positionRef = useRef(position);
@@ -105,6 +108,12 @@ function DraggableWindow({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
+        // Notify parent when drag starts in layout mode (only once)
+        if (isLayoutMode && !hasNotifiedDragStartRef.current) {
+          hasNotifiedDragStartRef.current = true;
+          onDragStart?.();
+        }
+        
         const newX = e.clientX - dragStart.x;
         const newY = e.clientY - dragStart.y;
         setPosition({ x: newX, y: newY });
@@ -143,6 +152,11 @@ function DraggableWindow({
     };
 
     const handleMouseUp = () => {
+      // Reset drag start notification flag
+      if (isDragging) {
+        hasNotifiedDragStartRef.current = false;
+      }
+      
       // Handle snap to zone when in layout mode
       if (isDragging && isLayoutMode && currentZoneRef.current && onSnapToZone) {
         onSnapToZone(id, currentZoneRef.current);
@@ -168,7 +182,7 @@ function DraggableWindow({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, dragStart, resizeStart, id, onUpdate, isLayoutMode, layoutZones, size.width, size.height, onDragOverZone, onSnapToZone]);
+  }, [isDragging, isResizing, dragStart, resizeStart, id, onUpdate, isLayoutMode, layoutZones, size.width, size.height, onDragOverZone, onSnapToZone, onDragStart]);
 
   // Return null if window is not visible - AFTER all hooks
   if (!isVisible) {
@@ -246,6 +260,7 @@ export function App() {
   const [focusedAppId, setFocusedAppId] = useState<string | null>(null);
   const [activeLayoutZone, setActiveLayoutZone] = useState<string | null>(null);
   const [layoutZones, setLayoutZones] = useState<Zone[]>([]);
+  const [onDragStartCallback, setOnDragStartCallback] = useState<(() => void) | null>(null);
   const [appRegistry, setAppRegistry] = useState(() => {
     const loaded = loadAppRegistry();
     return loaded || initializeRegistry();
@@ -691,6 +706,10 @@ export function App() {
             onFocus={handleAppFocus}
             onDragOverZone={setActiveLayoutZone}
             onSnapToZone={handleSnapToZone}
+            onDragStart={() => {
+              // Notify callback when drag starts
+              onDragStartCallback?.();
+            }}
           />
         ))}
         
@@ -714,6 +733,7 @@ export function App() {
           onCloseLayout={() => setLayoutZones([])}
           onZonesReady={setLayoutZones}
           activeZone={activeLayoutZone}
+          setOnDragStartCallback={setOnDragStartCallback}
         />
       </div>
     </div>

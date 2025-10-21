@@ -20,6 +20,7 @@ interface ToolbarProps {
   onCloseLayout?: () => void;
   onZonesReady?: (zones: Zone[]) => void;
   activeZone: string | null;
+  setOnDragStartCallback?: (callback: (() => void) | null) => void;
 }
 
 export function Toolbar({ 
@@ -34,7 +35,8 @@ export function Toolbar({
   activeLayout,
   onCloseLayout,
   onZonesReady,
-  activeZone
+  activeZone,
+  setOnDragStartCallback
 }: ToolbarProps) {
   const { navigationPath, currentSubmenu, navigateToSubmenu, navigateBack, getParentLabel } = useNestedSubmenuNavigation(300);
   const [arrangeSubmenu, setArrangeSubmenu] = useState<string | null>(null);
@@ -62,6 +64,18 @@ export function Toolbar({
       onCloseLayout?.();
     }
   }, [expandLevel, navigationPath.length, onCloseLayout]);
+
+  // Set up drag start callback when in layout mode
+  useEffect(() => {
+    if (activeLayoutType && setOnDragStartCallback) {
+      // When dragging starts, navigate back from layouts to create
+      setOnDragStartCallback(() => () => {
+        navigateBack();
+      });
+    } else if (setOnDragStartCallback) {
+      setOnDragStartCallback(null);
+    }
+  }, [activeLayoutType, setOnDragStartCallback, navigateBack]);
 
   const workspaceButtons: ToolbarButtonConfig[] = [
     { name: "Create", workspace: "create", icon: Plus, opensSubmenu: "create" },
@@ -133,7 +147,7 @@ export function Toolbar({
     if (button.isCancel) {
       navigateBack();
       setActiveLayoutType(null);
-      onCloseLayout?.();
+      onCloseLayout?.(); // This will clear the zones when cancel is pressed in create menu
     } else if (button.opensSubmenu) {
       navigateToSubmenu(button.opensSubmenu);
     } else if (button.workspace) {
