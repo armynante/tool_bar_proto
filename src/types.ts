@@ -31,3 +31,16 @@ export interface WorkspaceConfigs {
   [workspaceName: string]: WorkspaceConfig;
 }
 
+export interface Folder {
+  id: string;
+  apps: string[]; // App IDs in this folder
+  activeAppId: string; // Currently displayed app
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  zIndex: number;
+}
+
+export interface FolderRegistry {
+  [folderId: string]: Folder;
+}
+

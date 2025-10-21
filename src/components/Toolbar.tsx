@@ -744,7 +744,7 @@ export function Toolbar({
 
         {/* Update Layout and Cancel buttons - shown when editing arrangement */}
         {isEditingArrangement && editingWorkspaceKey && (
-          <div className="bottom-8 left-1/2 z-[10000] fixed flex gap-3 -translate-x-1/2">
+          <div className="bottom-24 left-1/2 z-[10000] fixed flex gap-3 -translate-x-1/2">
             <button
               onClick={handleCancelArrangementEdit}
               className="flex justify-center items-center gap-2 bg-black/60 hover:bg-black/80 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] px-6 py-3 rounded-xl outline outline-white/30 font-bold text-white text-sm transition-all duration-200"

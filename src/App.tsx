@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import "./index.css";
 import desktopBg from "./assets/desktop-bg.png";
-import { AppState } from "./types";
+import { AppState, Folder, FolderRegistry } from "./types";
 import { debouncedSaveAppRegistry, loadAppRegistry, saveAppRegistry, flushPendingSave } from "./utils/storage";
 import { initializeRegistry, mergeNewAppsIntoRegistry, WORKSPACE_CONFIGS } from "./config/workspaces";
 import { Dock } from "./components/Dock";
 import { Toolbar } from "./components/Toolbar";
 import { Zone } from "./components/LayoutOverlay";
+import { FolderWindow } from "./components/FolderWindow";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
@@ -261,6 +262,7 @@ export function App() {
   const [activeLayoutZone, setActiveLayoutZone] = useState<string | null>(null);
   const [layoutZones, setLayoutZones] = useState<Zone[]>([]);
   const [onDragStartCallback, setOnDragStartCallback] = useState<(() => void) | null>(null);
+  const [folderRegistry, setFolderRegistry] = useState<FolderRegistry>({});
   const [appRegistry, setAppRegistry] = useState(() => {
     const loaded = loadAppRegistry();
     if (loaded) {
@@ -559,12 +561,16 @@ export function App() {
   };
 
   // Handler for snapping app to zone during drag
-  const handleSnapToZone = (appId: string, zoneId: string) => {
+  const handleSnapToZone = (appIdOrFolderId: string, zoneId: string) => {
+    const isFolder = appIdOrFolderId.startsWith('folder-');
+    
     // Temporarily set focused app for the arrangement
     const previousFocused = focusedAppId;
-    setFocusedAppId(appId);
+    if (!isFolder) {
+      setFocusedAppId(appIdOrFolderId);
+    }
     
-    // Arrange the app to the zone
+    // Calculate zone position and size
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     const padding = 50;
@@ -660,14 +666,90 @@ export function App() {
         return;
     }
 
-    setAppRegistry(prev => ({
-      ...prev,
-      [appId]: {
-        ...prev[appId],
-        position: newPosition,
-        size: newSize,
-      },
-    }));
+    // Check for collision with existing apps or folders in the same zone
+    const existingAppInZone = Object.values(appRegistry).find(app => 
+      app.isVisible && 
+      app.id !== appIdOrFolderId &&
+      Math.abs(app.position.x - newPosition.x) < 10 &&
+      Math.abs(app.position.y - newPosition.y) < 10
+    );
+
+    const existingFolderInZone = Object.values(folderRegistry).find(folder =>
+      Math.abs(folder.position.x - newPosition.x) < 10 &&
+      Math.abs(folder.position.y - newPosition.y) < 10
+    );
+
+    if (isFolder) {
+      // Moving a folder
+      setFolderRegistry(prev => ({
+        ...prev,
+        [appIdOrFolderId]: {
+          ...prev[appIdOrFolderId],
+          position: newPosition,
+          size: newSize,
+        },
+      }));
+    } else if (existingFolderInZone) {
+      // Add app to existing folder
+      setFolderRegistry(prev => ({
+        ...prev,
+        [existingFolderInZone.id]: {
+          ...prev[existingFolderInZone.id],
+          apps: [...prev[existingFolderInZone.id].apps, appIdOrFolderId],
+        },
+      }));
+      
+      // Hide the app
+      setAppRegistry(prev => ({
+        ...prev,
+        [appIdOrFolderId]: {
+          ...prev[appIdOrFolderId],
+          isVisible: false,
+        },
+      }));
+    } else if (existingAppInZone) {
+      // Create new folder with both apps
+      const folderId = `folder-${Date.now()}`;
+      const maxZ = Math.max(
+        ...Object.values(appRegistry).map(app => app.zIndex),
+        ...Object.values(folderRegistry).map(folder => folder.zIndex)
+      );
+      
+      setFolderRegistry(prev => ({
+        ...prev,
+        [folderId]: {
+          id: folderId,
+          apps: [existingAppInZone.id, appIdOrFolderId],
+          activeAppId: existingAppInZone.id,
+          position: newPosition,
+          size: newSize,
+          zIndex: maxZ + 1,
+        },
+      }));
+      
+      // Hide both apps
+      setAppRegistry(prev => ({
+        ...prev,
+        [existingAppInZone.id]: {
+          ...prev[existingAppInZone.id],
+          isVisible: false,
+        },
+        [appIdOrFolderId]: {
+          ...prev[appIdOrFolderId],
+          isVisible: false,
+        },
+      }));
+    } else {
+      // No collision, just position the app normally
+      setAppRegistry(prev => ({
+        ...prev,
+        [appIdOrFolderId]: {
+          ...prev[appIdOrFolderId],
+          position: newPosition,
+          size: newSize,
+        },
+      }));
+    }
     
     // Restore previous focused app
     setFocusedAppId(previousFocused);
@@ -693,6 +775,75 @@ export function App() {
     } else {
       setExpandLevel("settings");
     }
+  };
+
+  // Handler for folder operations
+  const handleFolderUpdate = (folderId: string, updates: Partial<Folder>) => {
+    setFolderRegistry(prev => ({
+      ...prev,
+      [folderId]: {
+        ...prev[folderId],
+        ...updates
+      }
+    }));
+  };
+
+  const handleFolderQuit = (folderId: string) => {
+    const folder = folderRegistry[folderId];
+    if (!folder) return;
+    
+    // Show all apps in the folder again
+    setAppRegistry(prev => {
+      const updated = { ...prev };
+      folder.apps.forEach(appId => {
+        if (updated[appId]) {
+          updated[appId] = {
+            ...updated[appId],
+            isVisible: true,
+            isLaunched: true,
+          };
+        }
+      });
+      return updated;
+    });
+    
+    // Remove the folder
+    setFolderRegistry(prev => {
+      const updated = { ...prev };
+      delete updated[folderId];
+      return updated;
+    });
+  };
+
+  const handleFolderMinimize = (folderId: string) => {
+    setFolderRegistry(prev => {
+      const updated = { ...prev };
+      delete updated[folderId];
+      return updated;
+    });
+  };
+
+  const handleFolderFocus = (folderId: string) => {
+    setFolderRegistry(prev => {
+      const maxZ = Math.max(...Object.values(prev).map(f => f.zIndex));
+      return {
+        ...prev,
+        [folderId]: {
+          ...prev[folderId],
+          zIndex: maxZ + 1
+        }
+      };
+    });
+  };
+
+  const handleTabSwitch = (folderId: string, appId: string) => {
+    setFolderRegistry(prev => ({
+      ...prev,
+      [folderId]: {
+        ...prev[folderId],
+        activeAppId: appId
+      }
+    }));
   };
 
   return (
@@ -728,6 +879,28 @@ export function App() {
               // Notify callback when drag starts
               onDragStartCallback?.();
             }}
+          />
+        ))}
+
+        {/* Render folders */}
+        {Object.values(folderRegistry).map(folder => (
+          <FolderWindow
+            key={folder.id}
+            folder={folder}
+            appRegistry={appRegistry}
+            isFocused={focusedAppId === folder.id}
+            isLayoutMode={layoutZones.length > 0}
+            layoutZones={layoutZones}
+            onQuit={handleFolderQuit}
+            onMinimize={handleFolderMinimize}
+            onUpdate={handleFolderUpdate}
+            onFocus={handleFolderFocus}
+            onDragOverZone={setActiveLayoutZone}
+            onSnapToZone={handleSnapToZone}
+            onDragStart={() => {
+              onDragStartCallback?.();
+            }}
+            onTabSwitch={handleTabSwitch}
           />
         ))}
         
