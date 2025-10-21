@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { ToolbarSubmenu } from "./ToolbarSubmenu";
 import { ToolbarButtonConfig } from "../types/toolbar";
 import { useNestedSubmenuNavigation } from "../hooks/useSubmenuAnimation";
-import { LayoutOverlay, LayoutType } from "./LayoutOverlay";
+import { LayoutOverlay, LayoutType, Zone } from "./LayoutOverlay";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
@@ -16,6 +16,10 @@ interface ToolbarProps {
   onWorkspaceClick: (workspace: string) => void;
   onArrangeApp: (arrangement: string) => void;
   onLayoutZoneClick?: (zone: string) => void;
+  activeLayout: boolean;
+  onCloseLayout?: () => void;
+  onZonesReady?: (zones: Zone[]) => void;
+  activeZone: string | null;
 }
 
 export function Toolbar({ 
@@ -26,11 +30,15 @@ export function Toolbar({
   onSettingsClick,
   onWorkspaceClick,
   onArrangeApp,
-  onLayoutZoneClick
+  onLayoutZoneClick,
+  activeLayout,
+  onCloseLayout,
+  onZonesReady,
+  activeZone
 }: ToolbarProps) {
   const { navigationPath, currentSubmenu, navigateToSubmenu, navigateBack, getParentLabel } = useNestedSubmenuNavigation(300);
   const [arrangeSubmenu, setArrangeSubmenu] = useState<string | null>(null);
-  const [activeLayout, setActiveLayout] = useState<LayoutType>(null);
+  const [activeLayoutType, setActiveLayoutType] = useState<LayoutType>(null);
 
   // Reset submenu when expandLevel changes
   useEffect(() => {
@@ -50,9 +58,10 @@ export function Toolbar({
   // Reset active layout when expandLevel changes
   useEffect(() => {
     if (expandLevel === "collapsed" || navigationPath.length === 0) {
-      setActiveLayout(null);
+      setActiveLayoutType(null);
+      onCloseLayout?.();
     }
-  }, [expandLevel, navigationPath.length]);
+  }, [expandLevel, navigationPath.length, onCloseLayout]);
 
   const workspaceButtons: ToolbarButtonConfig[] = [
     { name: "Create", workspace: "create", icon: Plus, opensSubmenu: "create" },
@@ -123,7 +132,8 @@ export function Toolbar({
   const handleCreateButtonClick = (button: ToolbarButtonConfig) => {
     if (button.isCancel) {
       navigateBack();
-      setActiveLayout(null);
+      setActiveLayoutType(null);
+      onCloseLayout?.();
     } else if (button.opensSubmenu) {
       navigateToSubmenu(button.opensSubmenu);
     } else if (button.workspace) {
@@ -134,10 +144,11 @@ export function Toolbar({
   const handleLayoutsButtonClick = (button: ToolbarButtonConfig) => {
     if (button.isCancel) {
       navigateBack();
-      setActiveLayout(null);
+      setActiveLayoutType(null);
+      onCloseLayout?.();
     } else if (button.workspace) {
       // Set the active layout to show the overlay
-      setActiveLayout(button.workspace as LayoutType);
+      setActiveLayoutType(button.workspace as LayoutType);
     }
   };
 
@@ -220,7 +231,7 @@ export function Toolbar({
         {appArrangeButtons.map((button, i) => {
           const IconComponent = button.icon;
           const distance = (i + 1) * 3.5; // 3.5rem spacing for square buttons
-          const isVisible = focusedAppId && expandLevel !== "collapsed" && !arrangeSubmenu;
+          const isVisible = focusedAppId && expandLevel !== "collapsed" && !arrangeSubmenu && !activeLayout;
 
           return (
             <div
@@ -381,13 +392,14 @@ export function Toolbar({
 
       {/* Layout Overlay - shown when a layout is selected */}
       <LayoutOverlay 
-        layoutType={activeLayout} 
-        onZoneClick={(zone) => {
-          if (onLayoutZoneClick) {
-            onLayoutZoneClick(zone);
-          }
-          // Keep overlay active after clicking a zone
+        layoutType={activeLayoutType}
+        activeZone={activeZone}
+        onClose={() => {
+          setActiveLayoutType(null);
+          onCloseLayout?.();
+          navigateBack();
         }}
+        onZonesReady={onZonesReady}
       />
     </div>
   );

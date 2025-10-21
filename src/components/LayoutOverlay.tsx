@@ -1,13 +1,9 @@
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 
 export type LayoutType = "quarters" | "splits" | "two-quarters-left" | null;
 
-interface LayoutOverlayProps {
-  layoutType: LayoutType;
-  onZoneClick?: (zone: string) => void;
-}
-
-interface Zone {
+export interface Zone {
   id: string;
   x: number;
   y: number;
@@ -16,9 +12,15 @@ interface Zone {
   label: string;
 }
 
-export function LayoutOverlay({ layoutType, onZoneClick }: LayoutOverlayProps) {
+interface LayoutOverlayProps {
+  layoutType: LayoutType;
+  activeZone: string | null;
+  onClose?: () => void;
+  onZonesReady?: (zones: Zone[]) => void;
+}
+
+export function LayoutOverlay({ layoutType, activeZone, onClose, onZonesReady }: LayoutOverlayProps) {
   const [zones, setZones] = useState<Zone[]>([]);
-  const [hoveredZone, setHoveredZone] = useState<string | null>(null);
 
   useEffect(() => {
     if (!layoutType) {
@@ -133,22 +135,23 @@ export function LayoutOverlay({ layoutType, onZoneClick }: LayoutOverlayProps) {
     }
 
     setZones(newZones);
-  }, [layoutType]);
+    onZonesReady?.(newZones);
+  }, [layoutType, onZonesReady]);
 
   if (!layoutType || zones.length === 0) {
     return null;
   }
 
   return (
-    <div className="z-[9998] fixed inset-0 pointer-events-none">
+    <div className="z-10 fixed inset-0 pointer-events-none">
       {zones.map((zone) => (
         <div
           key={zone.id}
           className={[
-            "absolute border-4 rounded-lg transition-all duration-200 pointer-events-auto cursor-pointer",
-            hoveredZone === zone.id
-              ? "bg-blue-500/30 border-blue-400 backdrop-blur-sm"
-              : "bg-white/10 border-white/40 backdrop-blur-sm",
+            "absolute rounded-lg transition-all duration-200 pointer-events-none",
+            activeZone === zone.id
+              ? "bg-green-500/40 border-green-400 border-8 backdrop-blur-sm"
+              : "bg-white/10 border-white/40 border-4 backdrop-blur-sm",
           ].join(" ")}
           style={{
             left: `${zone.x}px`,
@@ -156,9 +159,6 @@ export function LayoutOverlay({ layoutType, onZoneClick }: LayoutOverlayProps) {
             width: `${zone.width}px`,
             height: `${zone.height}px`,
           }}
-          onMouseEnter={() => setHoveredZone(zone.id)}
-          onMouseLeave={() => setHoveredZone(null)}
-          onClick={() => onZoneClick?.(zone.id)}
         >
           <div className="flex justify-center items-center w-full h-full">
             <span className="drop-shadow-lg font-bold text-white text-2xl">
@@ -167,6 +167,17 @@ export function LayoutOverlay({ layoutType, onZoneClick }: LayoutOverlayProps) {
           </div>
         </div>
       ))}
+      
+      {/* Done button */}
+      <div
+        onClick={onClose}
+        className="right-8 bottom-8 z-[10000] fixed flex flex-col justify-center items-center gap-0.5 bg-white/10 hover:bg-white/20 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 text-white transition-all duration-300 cursor-pointer pointer-events-auto"
+        role="button"
+        title="Close Layout Mode"
+      >
+        <X size={16} strokeWidth={2.5} />
+        <span className="font-bold text-[8px]">done</span>
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { debouncedSaveAppRegistry, loadAppRegistry, saveAppRegistry, flushPendin
 import { initializeRegistry, WORKSPACE_CONFIGS } from "./config/workspaces";
 import { Dock } from "./components/Dock";
 import { Toolbar } from "./components/Toolbar";
+import { Zone } from "./components/LayoutOverlay";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
@@ -21,10 +22,14 @@ interface WindowProps {
   imageAlt: string;
   zIndex: number;
   isFocused: boolean;
+  isLayoutMode: boolean;
+  layoutZones: Zone[];
   onQuit: (id: string) => void;
   onMinimize: (id: string) => void;
   onUpdate: (id: string, updates: Partial<AppState>) => void;
   onFocus: (id: string) => void;
+  onDragOverZone?: (zoneId: string | null) => void;
+  onSnapToZone?: (appId: string, zoneId: string) => void;
 }
 
 function DraggableWindow({
@@ -39,10 +44,14 @@ function DraggableWindow({
   imageAlt,
   zIndex,
   isFocused,
+  isLayoutMode,
+  layoutZones,
   onQuit,
   onMinimize,
   onUpdate,
-  onFocus
+  onFocus,
+  onDragOverZone,
+  onSnapToZone
 }: WindowProps) {
   const [position, setPosition] = useState({ x: initialX, y: initialY });
   const [size, setSize] = useState({ width: initialWidth, height: initialHeight });
@@ -51,6 +60,7 @@ function DraggableWindow({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const windowRef = useRef<HTMLDivElement>(null);
+  const currentZoneRef = useRef<string | null>(null);
 
   // Use refs to capture latest position/size values for the mouseUp handler
   const positionRef = useRef(position);
@@ -95,10 +105,36 @@ function DraggableWindow({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
-        setPosition({
-          x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y,
-        });
+        const newX = e.clientX - dragStart.x;
+        const newY = e.clientY - dragStart.y;
+        setPosition({ x: newX, y: newY });
+        
+        // Check for zone intersection when in layout mode
+        if (isLayoutMode && layoutZones.length > 0) {
+          // Calculate window center point
+          const centerX = newX + size.width / 2;
+          const centerY = newY + size.height / 2;
+          
+          // Find which zone (if any) contains the center point
+          let foundZone: string | null = null;
+          for (const zone of layoutZones) {
+            if (
+              centerX >= zone.x &&
+              centerX <= zone.x + zone.width &&
+              centerY >= zone.y &&
+              centerY <= zone.y + zone.height
+            ) {
+              foundZone = zone.id;
+              break;
+            }
+          }
+          
+          // Only call callback if zone changed
+          if (foundZone !== currentZoneRef.current) {
+            currentZoneRef.current = foundZone;
+            onDragOverZone?.(foundZone);
+          }
+        }
       } else if (isResizing) {
         const newWidth = Math.max(200, resizeStart.width + (e.clientX - resizeStart.x));
         const newHeight = Math.max(150, resizeStart.height + (e.clientY - resizeStart.y));
@@ -107,12 +143,18 @@ function DraggableWindow({
     };
 
     const handleMouseUp = () => {
-      // Save position/size changes when drag/resize finishes using refs
-      if (isDragging) {
+      // Handle snap to zone when in layout mode
+      if (isDragging && isLayoutMode && currentZoneRef.current && onSnapToZone) {
+        onSnapToZone(id, currentZoneRef.current);
+        currentZoneRef.current = null;
+        onDragOverZone?.(null);
+      } else if (isDragging) {
+        // Save position/size changes when drag/resize finishes using refs
         onUpdate(id, { position: positionRef.current });
       } else if (isResizing) {
         onUpdate(id, { size: sizeRef.current });
       }
+      
       setIsDragging(false);
       setIsResizing(false);
     };
@@ -126,7 +168,7 @@ function DraggableWindow({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, dragStart, resizeStart, id, onUpdate]);
+  }, [isDragging, isResizing, dragStart, resizeStart, id, onUpdate, isLayoutMode, layoutZones, size.width, size.height, onDragOverZone, onSnapToZone]);
 
   // Return null if window is not visible - AFTER all hooks
   if (!isVisible) {
@@ -202,6 +244,8 @@ function DraggableWindow({
 export function App() {
   const [expandLevel, setExpandLevel] = useState<ExpandLevel>("collapsed");
   const [focusedAppId, setFocusedAppId] = useState<string | null>(null);
+  const [activeLayoutZone, setActiveLayoutZone] = useState<string | null>(null);
+  const [layoutZones, setLayoutZones] = useState<Zone[]>([]);
   const [appRegistry, setAppRegistry] = useState(() => {
     const loaded = loadAppRegistry();
     return loaded || initializeRegistry();
@@ -481,6 +525,121 @@ export function App() {
     handleArrangeApp(zone);
   };
 
+  // Handler for snapping app to zone during drag
+  const handleSnapToZone = (appId: string, zoneId: string) => {
+    // Temporarily set focused app for the arrangement
+    const previousFocused = focusedAppId;
+    setFocusedAppId(appId);
+    
+    // Arrange the app to the zone
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const padding = 50;
+
+    let newPosition = { x: 0, y: 0 };
+    let newSize = { width: 800, height: 600 };
+
+    switch (zoneId) {
+      case "half-left":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight - padding * 2,
+        };
+        newPosition = { x: padding, y: padding };
+        break;
+      case "half-right":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight - padding * 2,
+        };
+        newPosition = {
+          x: screenWidth / 2 + padding / 2,
+          y: padding,
+        };
+        break;
+      case "quarter-tl":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight / 2 - padding * 1.5,
+        };
+        newPosition = { x: padding, y: padding };
+        break;
+      case "quarter-tr":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight / 2 - padding * 1.5,
+        };
+        newPosition = {
+          x: screenWidth / 2 + padding / 2,
+          y: padding,
+        };
+        break;
+      case "quarter-bl":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight / 2 - padding * 1.5,
+        };
+        newPosition = {
+          x: padding,
+          y: screenHeight / 2 + padding / 2,
+        };
+        break;
+      case "quarter-br":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight / 2 - padding * 1.5,
+        };
+        newPosition = {
+          x: screenWidth / 2 + padding / 2,
+          y: screenHeight / 2 + padding / 2,
+        };
+        break;
+      case "third-left":
+        newSize = {
+          width: screenWidth / 3 - padding,
+          height: screenHeight - padding * 2,
+        };
+        newPosition = { x: padding, y: padding };
+        break;
+      case "third-center":
+        newSize = {
+          width: screenWidth / 3 - padding,
+          height: screenHeight - padding * 2,
+        };
+        newPosition = {
+          x: screenWidth / 3 + padding / 2,
+          y: padding,
+        };
+        break;
+      case "third-right":
+        newSize = {
+          width: screenWidth / 3 - padding,
+          height: screenHeight - padding * 2,
+        };
+        newPosition = {
+          x: (screenWidth / 3) * 2 + padding / 2,
+          y: padding,
+        };
+        break;
+      default:
+        // Restore previous focused app if zone not recognized
+        setFocusedAppId(previousFocused);
+        return;
+    }
+
+    setAppRegistry(prev => ({
+      ...prev,
+      [appId]: {
+        ...prev[appId],
+        position: newPosition,
+        size: newSize,
+      },
+    }));
+    
+    // Restore previous focused app
+    setFocusedAppId(previousFocused);
+  };
+
   const handleLauncherClick = () => {
     setExpandLevel(expandLevel === "collapsed" ? "menu" : "collapsed");
   };
@@ -524,10 +683,14 @@ export function App() {
             imageAlt={app.imageAlt}
             zIndex={app.zIndex}
             isFocused={focusedAppId === app.id}
+            isLayoutMode={layoutZones.length > 0}
+            layoutZones={layoutZones}
             onQuit={handleAppQuit}
             onMinimize={handleAppMinimize}
             onUpdate={handleAppUpdate}
             onFocus={handleAppFocus}
+            onDragOverZone={setActiveLayoutZone}
+            onSnapToZone={handleSnapToZone}
           />
         ))}
         
@@ -547,6 +710,10 @@ export function App() {
           onWorkspaceClick={handleWorkspaceClick}
           onArrangeApp={handleArrangeApp}
           onLayoutZoneClick={handleLayoutZoneClick}
+          activeLayout={layoutZones.length > 0}
+          onCloseLayout={() => setLayoutZones([])}
+          onZonesReady={setLayoutZones}
+          activeZone={activeLayoutZone}
         />
       </div>
     </div>
