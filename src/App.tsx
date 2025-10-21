@@ -3,7 +3,7 @@ import "./index.css";
 import desktopBg from "./assets/desktop-bg.png";
 import { AppState } from "./types";
 import { debouncedSaveAppRegistry, loadAppRegistry, saveAppRegistry, flushPendingSave } from "./utils/storage";
-import { initializeRegistry, WORKSPACE_CONFIGS } from "./config/workspaces";
+import { initializeRegistry, mergeNewAppsIntoRegistry, WORKSPACE_CONFIGS } from "./config/workspaces";
 import { Dock } from "./components/Dock";
 import { Toolbar } from "./components/Toolbar";
 import { Zone } from "./components/LayoutOverlay";
@@ -263,7 +263,11 @@ export function App() {
   const [onDragStartCallback, setOnDragStartCallback] = useState<(() => void) | null>(null);
   const [appRegistry, setAppRegistry] = useState(() => {
     const loaded = loadAppRegistry();
-    return loaded || initializeRegistry();
+    if (loaded) {
+      // Merge new apps into loaded registry to ensure new apps appear
+      return mergeNewAppsIntoRegistry(loaded);
+    }
+    return initializeRegistry();
   });
 
   // Save to localStorage whenever app registry changes (debounced)

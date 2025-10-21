@@ -95,7 +95,8 @@ export function Toolbar({
       // Reset navigation when leaving workspaces
       navigateBack();
     }
-  }, [expandLevel, navigationPath.length, navigateBack]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandLevel, navigationPath.length]);
 
   // Reset arrange submenu when app loses focus or toolbar collapses
   useEffect(() => {
@@ -110,7 +111,8 @@ export function Toolbar({
       setActiveLayoutType(null);
       onCloseLayout?.();
     }
-  }, [expandLevel, navigationPath.length, onCloseLayout]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandLevel, navigationPath.length]);
 
   // Set up drag start callback when in layout mode AND viewing the layouts submenu
   useEffect(() => {
@@ -124,7 +126,8 @@ export function Toolbar({
     } else if (setOnDragStartCallback) {
       setOnDragStartCallback(null);
     }
-  }, [activeLayoutType, currentSubmenu, navigationPath.length, setOnDragStartCallback, navigateBack]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLayoutType, currentSubmenu, navigationPath.length]);
 
   const createModeButtons: ToolbarButtonConfig[] = [
     { name: "cancel", workspace: "create", icon: X, isCancel: true },
