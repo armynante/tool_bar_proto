@@ -749,6 +749,7 @@ export function App() {
           activeZone={activeLayoutZone}
           setOnDragStartCallback={setOnDragStartCallback}
           appRegistry={appRegistry}
+          onClearFocus={() => setFocusedAppId(null)}
         />
       </div>
     </div>

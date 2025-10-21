@@ -23,6 +23,7 @@ interface ToolbarProps {
   activeZone: string | null;
   setOnDragStartCallback?: (callback: (() => void) | null) => void;
   appRegistry?: AppRegistry;
+  onClearFocus?: () => void;
 }
 
 export function Toolbar({ 
@@ -39,7 +40,8 @@ export function Toolbar({
   onZonesReady,
   activeZone,
   setOnDragStartCallback,
-  appRegistry
+  appRegistry,
+  onClearFocus
 }: ToolbarProps) {
   const { navigationPath, currentSubmenu, navigateToSubmenu, navigateBack, getParentLabel } = useNestedSubmenuNavigation(300);
   const [arrangeSubmenu, setArrangeSubmenu] = useState<string | null>(null);
@@ -233,6 +235,7 @@ export function Toolbar({
 
   const handleUpdateLayout = () => {
     setIsEditingArrangement(false);
+    onClearFocus?.();
     navigateBack();
   };
 
