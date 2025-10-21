@@ -1,4 +1,4 @@
-import { Plus, Home, MessageSquare, Box, Settings2, EyeOff, Move, X, Save, Grid, EyeOffIcon, Maximize2, Maximize, Columns2, Columns3, Grid2X2 } from "lucide-react";
+import { Plus, Home, MessageSquare, Box, Settings2, EyeOff, Move, X, Save, Grid, EyeOffIcon, Maximize2, Maximize, Columns2, Columns3, Grid2X2, ArrowLeft, ArrowRight, ArrowUp, ArrowDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ToolbarSubmenu } from "./ToolbarSubmenu";
 import { ToolbarButtonConfig } from "../types/toolbar";
@@ -8,20 +8,25 @@ type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
 interface ToolbarProps {
   expandLevel: ExpandLevel;
+  focusedAppId: string | null;
   onLauncherClick: () => void;
   onWorkspacesClick: () => void;
   onSettingsClick: () => void;
   onWorkspaceClick: (workspace: string) => void;
+  onArrangeApp: (arrangement: string) => void;
 }
 
 export function Toolbar({ 
-  expandLevel, 
+  expandLevel,
+  focusedAppId,
   onLauncherClick, 
   onWorkspacesClick,
   onSettingsClick,
-  onWorkspaceClick 
+  onWorkspaceClick,
+  onArrangeApp
 }: ToolbarProps) {
   const { navigationPath, currentSubmenu, navigateToSubmenu, navigateBack, getParentLabel } = useNestedSubmenuNavigation(300);
+  const [arrangeSubmenu, setArrangeSubmenu] = useState<string | null>(null);
 
   // Reset submenu when expandLevel changes
   useEffect(() => {
@@ -32,6 +37,13 @@ export function Toolbar({
       }
     }
   }, [expandLevel, navigationPath.length, navigateBack]);
+
+  // Reset arrange submenu when app loses focus or toolbar collapses
+  useEffect(() => {
+    if (!focusedAppId || expandLevel === "collapsed") {
+      setArrangeSubmenu(null);
+    }
+  }, [focusedAppId, expandLevel]);
 
   const workspaceButtons: ToolbarButtonConfig[] = [
     { name: "Create", workspace: "create", icon: Plus, opensSubmenu: "create" },
@@ -62,6 +74,36 @@ export function Toolbar({
     { name: "Move", icon: Move },
   ];
 
+  // Arrangement buttons for focused apps
+  const mainArrangeButtons: ToolbarButtonConfig[] = [
+    { name: "center", icon: Maximize2, workspace: "center" },
+    { name: "maximize", icon: Maximize, workspace: "maximize" },
+    { name: "halves", icon: Columns2, opensSubmenu: "halves" },
+    { name: "quarters", icon: Grid2X2, opensSubmenu: "quarters" },
+    { name: "thirds", icon: Columns3, opensSubmenu: "thirds" },
+  ];
+
+  const halvesButtons: ToolbarButtonConfig[] = [
+    { name: "cancel", icon: X, isCancel: true },
+    { name: "left", icon: ArrowLeft, workspace: "half-left" },
+    { name: "right", icon: ArrowRight, workspace: "half-right" },
+  ];
+
+  const quartersButtons: ToolbarButtonConfig[] = [
+    { name: "cancel", icon: X, isCancel: true },
+    { name: "top-left", icon: ArrowUp, workspace: "quarter-tl" },
+    { name: "top-right", icon: ArrowUp, workspace: "quarter-tr" },
+    { name: "bot-left", icon: ArrowDown, workspace: "quarter-bl" },
+    { name: "bot-right", icon: ArrowDown, workspace: "quarter-br" },
+  ];
+
+  const thirdsButtons: ToolbarButtonConfig[] = [
+    { name: "cancel", icon: X, isCancel: true },
+    { name: "left", icon: ArrowLeft, workspace: "third-left" },
+    { name: "center", icon: Maximize2, workspace: "third-center" },
+    { name: "right", icon: ArrowRight, workspace: "third-right" },
+  ];
+
   const handleWorkspaceButtonClick = (button: ToolbarButtonConfig) => {
     if (button.opensSubmenu) {
       navigateToSubmenu(button.opensSubmenu);
@@ -80,11 +122,22 @@ export function Toolbar({
     }
   };
 
-  const handleArrangeButtonClick = (button: ToolbarButtonConfig) => {
+  const handleWorkspaceArrangeButtonClick = (button: ToolbarButtonConfig) => {
     if (button.isCancel) {
       navigateBack();
     } else if (button.workspace) {
       onWorkspaceClick(button.workspace);
+    }
+  };
+
+  const handleArrangeButtonClick = (button: ToolbarButtonConfig) => {
+    if (button.isCancel) {
+      setArrangeSubmenu(null);
+    } else if (button.opensSubmenu) {
+      setArrangeSubmenu(button.opensSubmenu);
+    } else if (button.workspace) {
+      onArrangeApp(button.workspace);
+      setArrangeSubmenu(null);
     }
   };
 
@@ -160,6 +213,123 @@ export function Toolbar({
           Settings
         </div>
 
+        {/* Arrangement buttons - appear when app is focused and toolbar is expanded */}
+        {focusedAppId && expandLevel !== "collapsed" && !arrangeSubmenu && (
+          <>
+            {mainArrangeButtons.map((button, i) => {
+              const IconComponent = button.icon;
+              const distance = (i + 1) * 5; // 5rem spacing for wider buttons
+
+              return (
+                <div
+                  key={`arrange-${i}`}
+                  onClick={() => handleArrangeButtonClick(button)}
+                  className={[
+                    "absolute right-0 flex flex-col items-center justify-center gap-1 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl px-3 py-2 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                    "bottom-32 opacity-100 z-10"
+                  ].join(" ")}
+                  style={{
+                    transform: `translateX(-${distance}rem)`,
+                    transitionDelay: `${75 + i * 75}ms`,
+                  }}
+                  role="button"
+                  title={button.name}
+                >
+                  <IconComponent size={18} strokeWidth={2.5} />
+                  <span className="text-[9px] font-medium capitalize whitespace-nowrap">{button.name}</span>
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* Halves submenu for arrangement */}
+        {focusedAppId && expandLevel !== "collapsed" && arrangeSubmenu === "halves" && (
+          <>
+            {halvesButtons.map((button, i) => {
+              const IconComponent = button.icon;
+              const distance = (i + 1) * 4; // 4rem spacing
+              
+              return (
+                <div
+                  key={`halves-${i}`}
+                  onClick={() => handleArrangeButtonClick(button)}
+                  className={[
+                    "absolute right-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-full w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                    "bottom-32 opacity-100 z-10"
+                  ].join(" ")}
+                  style={{
+                    transform: `translateX(-${distance}rem)`,
+                    transitionDelay: `${75 + i * 75}ms`,
+                  }}
+                  role="button"
+                  title={button.name}
+                >
+                  <IconComponent size={20} strokeWidth={2.5} />
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* Quarters submenu for arrangement */}
+        {focusedAppId && expandLevel !== "collapsed" && arrangeSubmenu === "quarters" && (
+          <>
+            {quartersButtons.map((button, i) => {
+              const IconComponent = button.icon;
+              const distance = (i + 1) * 4; // 4rem spacing
+              
+              return (
+                <div
+                  key={`quarters-${i}`}
+                  onClick={() => handleArrangeButtonClick(button)}
+                  className={[
+                    "absolute right-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-full w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                    "bottom-32 opacity-100 z-10"
+                  ].join(" ")}
+                  style={{
+                    transform: `translateX(-${distance}rem)`,
+                    transitionDelay: `${75 + i * 75}ms`,
+                  }}
+                  role="button"
+                  title={button.name}
+                >
+                  <IconComponent size={20} strokeWidth={2.5} />
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* Thirds submenu for arrangement */}
+        {focusedAppId && expandLevel !== "collapsed" && arrangeSubmenu === "thirds" && (
+          <>
+            {thirdsButtons.map((button, i) => {
+              const IconComponent = button.icon;
+              const distance = (i + 1) * 4; // 4rem spacing
+              
+              return (
+                <div
+                  key={`thirds-${i}`}
+                  onClick={() => handleArrangeButtonClick(button)}
+                  className={[
+                    "absolute right-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-full w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                    "bottom-32 opacity-100 z-10"
+                  ].join(" ")}
+                  style={{
+                    transform: `translateX(-${distance}rem)`,
+                    transitionDelay: `${75 + i * 75}ms`,
+                  }}
+                  role="button"
+                  title={button.name}
+                >
+                  <IconComponent size={20} strokeWidth={2.5} />
+                </div>
+              );
+            })}
+          </>
+        )}
+
         {/* Workspaces button - dynamic position based on expand level */}
         <div
           onClick={onWorkspacesClick}
@@ -206,7 +376,7 @@ export function Toolbar({
           animationState={getArrangeAnimationState()}
           bottomPosition="bottom-16"
           expandLevel={expandLevel}
-          onItemClick={handleArrangeButtonClick}
+          onItemClick={handleWorkspaceArrangeButtonClick}
         />
 
         {/* Settings Submenu */}

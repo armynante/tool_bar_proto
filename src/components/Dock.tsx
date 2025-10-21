@@ -3,9 +3,10 @@ import { AppState } from "../types";
 interface DockProps {
   appRegistry: Record<string, AppState>;
   onDockClick: (id: string) => void;
+  focusedAppId: string | null;
 }
 
-export function Dock({ appRegistry, onDockClick }: DockProps) {
+export function Dock({ appRegistry, onDockClick, focusedAppId }: DockProps) {
   return (
     <div className="bottom-2 left-1/2 z-50 fixed flex items-end gap-2 bg-white/10 shadow-2xl backdrop-blur-2xl px-3 py-2 border border-white/20 rounded-2xl -translate-x-1/2 transform">
       {Object.values(appRegistry).map(app => (

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import "./index.css";
 import desktopBg from "./assets/desktop-bg.png";
 import { AppState } from "./types";
-import { saveAppRegistry, loadAppRegistry } from "./utils/storage";
+import { debouncedSaveAppRegistry, loadAppRegistry, saveAppRegistry, flushPendingSave } from "./utils/storage";
 import { initializeRegistry, WORKSPACE_CONFIGS } from "./config/workspaces";
 import { Dock } from "./components/Dock";
 import { Toolbar } from "./components/Toolbar";
@@ -20,23 +20,25 @@ interface WindowProps {
   imageSrc: string;
   imageAlt: string;
   zIndex: number;
+  isFocused: boolean;
   onQuit: (id: string) => void;
   onMinimize: (id: string) => void;
   onUpdate: (id: string, updates: Partial<AppState>) => void;
   onFocus: (id: string) => void;
 }
 
-function DraggableWindow({ 
+function DraggableWindow({
   id,
   isVisible,
-  initialX, 
-  initialY, 
-  initialWidth, 
+  initialX,
+  initialY,
+  initialWidth,
   initialHeight,
   title,
   imageSrc,
   imageAlt,
   zIndex,
+  isFocused,
   onQuit,
   onMinimize,
   onUpdate,
@@ -49,6 +51,19 @@ function DraggableWindow({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const windowRef = useRef<HTMLDivElement>(null);
+
+  // Use refs to capture latest position/size values for the mouseUp handler
+  const positionRef = useRef(position);
+  const sizeRef = useRef(size);
+
+  // Update refs when position/size changes
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+
+  useEffect(() => {
+    sizeRef.current = size;
+  }, [size]);
 
   // Sync position and size when props change (for workspace switching)
   useEffect(() => {
@@ -92,11 +107,11 @@ function DraggableWindow({
     };
 
     const handleMouseUp = () => {
-      // Save position/size changes when drag/resize finishes
+      // Save position/size changes when drag/resize finishes using refs
       if (isDragging) {
-        onUpdate(id, { position });
+        onUpdate(id, { position: positionRef.current });
       } else if (isResizing) {
-        onUpdate(id, { size });
+        onUpdate(id, { size: sizeRef.current });
       }
       setIsDragging(false);
       setIsResizing(false);
@@ -105,13 +120,13 @@ function DraggableWindow({
     if (isDragging || isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-      
+
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, dragStart, resizeStart, id, position, size, onUpdate]);
+  }, [isDragging, isResizing, dragStart, resizeStart, id, onUpdate]);
 
   // Return null if window is not visible - AFTER all hooks
   if (!isVisible) {
@@ -121,7 +136,10 @@ function DraggableWindow({
   return (
     <div
       ref={windowRef}
-      className="absolute bg-white/10 shadow-2xl backdrop-blur-xl border border-white/20 rounded-lg overflow-hidden"
+      className={[
+        "absolute bg-white/10 shadow-2xl backdrop-blur-xl rounded-lg overflow-hidden transition-all",
+        isFocused ? "border-4 border-blue-400 ring-4 ring-blue-300/50" : "border border-white/20"
+      ].join(" ")}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
@@ -182,15 +200,31 @@ function DraggableWindow({
 
 export function App() {
   const [expandLevel, setExpandLevel] = useState<ExpandLevel>("collapsed");
+  const [focusedAppId, setFocusedAppId] = useState<string | null>(null);
   const [appRegistry, setAppRegistry] = useState(() => {
     const loaded = loadAppRegistry();
     return loaded || initializeRegistry();
   });
 
-  // Save to localStorage whenever app registry changes
+  // Save to localStorage whenever app registry changes (debounced)
   useEffect(() => {
-    saveAppRegistry(appRegistry);
+    debouncedSaveAppRegistry(appRegistry);
   }, [appRegistry]);
+
+  // Save immediately on unmount to ensure no data loss
+  useEffect(() => {
+    return () => {
+      flushPendingSave();
+      saveAppRegistry(appRegistry);
+    };
+  }, [appRegistry]);
+
+  // Reset focused app when toolbar is collapsed
+  useEffect(() => {
+    if (expandLevel === "collapsed") {
+      setFocusedAppId(null);
+    }
+  }, [expandLevel]);
 
   // Handler to update app position or size
   const handleAppUpdate = (id: string, updates: Partial<AppState>) => {
@@ -229,6 +263,11 @@ export function App() {
 
   // Handler to bring app to front
   const handleAppFocus = (id: string) => {
+    // Only allow focusing when toolbar is expanded
+    if (expandLevel !== "collapsed") {
+      setFocusedAppId(id);
+    }
+    
     setAppRegistry(prev => {
       const maxZ = Math.max(...Object.values(prev).map(app => app.zIndex));
       return {
@@ -243,6 +282,11 @@ export function App() {
 
   // Handler for dock icon click
   const handleDockClick = (id: string) => {
+    // Only allow focusing when toolbar is expanded
+    if (expandLevel !== "collapsed") {
+      setFocusedAppId(id);
+    }
+    
     setAppRegistry(prev => {
       const app = prev[id];
       const maxZ = Math.max(...Object.values(prev).map(a => a.zIndex));
@@ -308,6 +352,127 @@ export function App() {
     });
   };
 
+  // Handler for arranging the focused app
+  const handleArrangeApp = (arrangement: string) => {
+    if (!focusedAppId) return;
+
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const padding = 50;
+
+    let newPosition = { x: 0, y: 0 };
+    let newSize = { width: 800, height: 600 };
+
+    switch (arrangement) {
+      case "center":
+        newSize = { width: 800, height: 600 };
+        newPosition = {
+          x: (screenWidth - newSize.width) / 2,
+          y: (screenHeight - newSize.height) / 2,
+        };
+        break;
+      case "maximize":
+        newSize = {
+          width: screenWidth - padding * 2,
+          height: screenHeight - padding * 2,
+        };
+        newPosition = { x: padding, y: padding };
+        break;
+      case "half-left":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight - padding * 2,
+        };
+        newPosition = { x: padding, y: padding };
+        break;
+      case "half-right":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight - padding * 2,
+        };
+        newPosition = {
+          x: screenWidth / 2 + padding / 2,
+          y: padding,
+        };
+        break;
+      case "quarter-tl":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight / 2 - padding * 1.5,
+        };
+        newPosition = { x: padding, y: padding };
+        break;
+      case "quarter-tr":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight / 2 - padding * 1.5,
+        };
+        newPosition = {
+          x: screenWidth / 2 + padding / 2,
+          y: padding,
+        };
+        break;
+      case "quarter-bl":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight / 2 - padding * 1.5,
+        };
+        newPosition = {
+          x: padding,
+          y: screenHeight / 2 + padding / 2,
+        };
+        break;
+      case "quarter-br":
+        newSize = {
+          width: screenWidth / 2 - padding * 1.5,
+          height: screenHeight / 2 - padding * 1.5,
+        };
+        newPosition = {
+          x: screenWidth / 2 + padding / 2,
+          y: screenHeight / 2 + padding / 2,
+        };
+        break;
+      case "third-left":
+        newSize = {
+          width: screenWidth / 3 - padding,
+          height: screenHeight - padding * 2,
+        };
+        newPosition = { x: padding, y: padding };
+        break;
+      case "third-center":
+        newSize = {
+          width: screenWidth / 3 - padding,
+          height: screenHeight - padding * 2,
+        };
+        newPosition = {
+          x: screenWidth / 3 + padding / 2,
+          y: padding,
+        };
+        break;
+      case "third-right":
+        newSize = {
+          width: screenWidth / 3 - padding,
+          height: screenHeight - padding * 2,
+        };
+        newPosition = {
+          x: (screenWidth / 3) * 2 + padding / 2,
+          y: padding,
+        };
+        break;
+      default:
+        return;
+    }
+
+    setAppRegistry(prev => ({
+      ...prev,
+      [focusedAppId]: {
+        ...prev[focusedAppId],
+        position: newPosition,
+        size: newSize,
+      },
+    }));
+  };
+
   const handleLauncherClick = () => {
     setExpandLevel(expandLevel === "collapsed" ? "menu" : "collapsed");
   };
@@ -350,6 +515,7 @@ export function App() {
             imageSrc={app.imageSrc}
             imageAlt={app.imageAlt}
             zIndex={app.zIndex}
+            isFocused={focusedAppId === app.id}
             onQuit={handleAppQuit}
             onMinimize={handleAppMinimize}
             onUpdate={handleAppUpdate}
@@ -358,14 +524,20 @@ export function App() {
         ))}
         
         {/* macOS-style Dock */}
-        <Dock appRegistry={appRegistry} onDockClick={handleDockClick} />
+        <Dock 
+          appRegistry={appRegistry} 
+          onDockClick={handleDockClick}
+          focusedAppId={focusedAppId}
+        />
 
         <Toolbar 
           expandLevel={expandLevel}
+          focusedAppId={focusedAppId}
           onLauncherClick={handleLauncherClick}
           onWorkspacesClick={handleWorkspacesClick}
           onSettingsClick={handleSettingsClick}
           onWorkspaceClick={handleWorkspaceClick}
+          onArrangeApp={handleArrangeApp}
         />
       </div>
     </div>
