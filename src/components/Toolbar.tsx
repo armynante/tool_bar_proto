@@ -48,6 +48,7 @@ export function Toolbar({
   const [layoutName, setLayoutName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const [editingWorkspaceKey, setEditingWorkspaceKey] = useState<string | null>(null);
+  const [isEditingArrangement, setIsEditingArrangement] = useState(false);
   const [workspaceButtons, setWorkspaceButtons] = useState<ToolbarButtonConfig[]>(() => {
     // Load saved workspaces from localStorage
     const savedWorkspaces = localStorage.getItem('customWorkspaces');
@@ -222,6 +223,24 @@ export function Toolbar({
     setLayoutName("");
     setSelectedIcon(null);
     setEditingWorkspaceKey(null);
+    setIsEditingArrangement(false);
+  };
+
+  const handleEditArrangement = () => {
+    setIsEditingArrangement(true);
+    navigateToSubmenu("create");
+  };
+
+  const handleUpdateLayout = () => {
+    setIsEditingArrangement(false);
+    navigateBack();
+  };
+
+  const handleCancelArrangementEdit = () => {
+    setIsEditingArrangement(false);
+    setActiveLayoutType(null);
+    onCloseLayout?.();
+    navigateBack();
   };
 
   const handleLayoutsButtonClick = (button: ToolbarButtonConfig) => {
@@ -608,8 +627,11 @@ export function Toolbar({
         />
 
         {/* Save Input Box - shown above create buttons when save is clicked or when editing */}
-        {isSaveInputVisible && (currentSubmenu === "create" || editingWorkspaceKey) && (
-          <div className="right-8 bottom-32 z-[9999] absolute bg-white/10 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] p-5 rounded-xl outline outline-white/30 w-[600px] transition-all duration-300">
+        {isSaveInputVisible && ((currentSubmenu === "create" && !isEditingArrangement) || editingWorkspaceKey) && (
+          <div className={[
+            "right-8 bottom-32 z-[9999] absolute shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] p-5 rounded-xl outline outline-white/30 w-[600px] transition-all duration-300",
+            isEditingArrangement ? "bg-white/5 opacity-50 pointer-events-none" : "bg-white/10"
+          ].join(" ")}>
             <div className="space-y-4">
               {/* Top Row - Layout Name Input */}
               <div>
@@ -696,6 +718,15 @@ export function Toolbar({
                   <X size={16} strokeWidth={2.5} />
                   Cancel
                 </button>
+                {editingWorkspaceKey && !isEditingArrangement && (
+                  <button
+                    onClick={handleEditArrangement}
+                    className="flex flex-1 justify-center items-center gap-2 bg-blue-500/20 hover:bg-blue-500/30 px-4 py-2 rounded-lg font-bold text-white text-sm transition-all duration-200"
+                  >
+                    <Grid size={16} strokeWidth={2.5} />
+                    Edit Arrangement
+                  </button>
+                )}
                 <button
                   onClick={handleSaveLayout}
                   className="flex flex-1 justify-center items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg font-bold text-white text-sm transition-all duration-200"
@@ -705,6 +736,26 @@ export function Toolbar({
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Update Layout and Cancel buttons - shown when editing arrangement */}
+        {isEditingArrangement && editingWorkspaceKey && (
+          <div className="bottom-8 left-1/2 z-[10000] fixed flex gap-3 -translate-x-1/2">
+            <button
+              onClick={handleCancelArrangementEdit}
+              className="flex justify-center items-center gap-2 bg-white/10 hover:bg-white/20 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] px-6 py-3 rounded-xl outline outline-white/30 font-bold text-white text-sm transition-all duration-200"
+            >
+              <X size={18} strokeWidth={2.5} />
+              Cancel
+            </button>
+            <button
+              onClick={handleUpdateLayout}
+              className="flex justify-center items-center gap-2 bg-white/20 hover:bg-white/30 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] px-6 py-3 rounded-xl outline outline-white/30 font-bold text-white text-sm transition-all duration-200"
+            >
+              <Save size={18} strokeWidth={2.5} />
+              Update Layout
+            </button>
           </div>
         )}
 
