@@ -30,11 +30,9 @@ export function Toolbar({
 
   // Reset submenu when expandLevel changes
   useEffect(() => {
-    if (expandLevel !== "workspaces") {
+    if (expandLevel !== "workspaces" && navigationPath.length > 0) {
       // Reset navigation when leaving workspaces
-      while (navigationPath.length > 0) {
-        navigateBack();
-      }
+      navigateBack();
     }
   }, [expandLevel, navigationPath.length, navigateBack]);
 
@@ -55,53 +53,47 @@ export function Toolbar({
   const createModeButtons: ToolbarButtonConfig[] = [
     { name: "cancel", workspace: "create", icon: X, isCancel: true },
     { name: "save", workspace: "create", icon: Save },
-    { name: "arrange", workspace: "create", icon: Grid, opensSubmenu: "arrange" },
     { name: "hide all", workspace: "create", icon: EyeOffIcon },
   ];
 
-  const arrangeButtons: ToolbarButtonConfig[] = [
-    { name: "cancel", workspace: "arrange", icon: X, isCancel: true },
-    { name: "center", workspace: "arrange", icon: Maximize2 },
-    { name: "maximize", workspace: "arrange", icon: Maximize },
-    { name: "halves", workspace: "arrange", icon: Columns2 },
-    { name: "quarters", workspace: "arrange", icon: Grid2X2 },
-    { name: "thirds", workspace: "arrange", icon: Columns3 },
+  // Main arrangement buttons for focused apps - appear at bottom when app is selected
+  const appArrangeButtons: ToolbarButtonConfig[] = [
+    { name: "thirds", icon: Columns3, opensSubmenu: "thirds", title: "Thirds" },
+    { name: "quarters", icon: Grid2X2, opensSubmenu: "quarters", title: "Quarters" },
+    { name: "halves", icon: Columns2, opensSubmenu: "halves", title: "Halves" },
+    { name: "maximize", workspace: "maximize", icon: Maximize, title: "Maximize" },
+    { name: "center", workspace: "center", icon: Maximize2, title: "Center" },
+    { name: "cancel", workspace: "cancel", icon: X, title: "Cancel", isCancel: true },
+  ];
+
+  // Submenu buttons for halves arrangement
+  const halvesButtons: ToolbarButtonConfig[] = [
+    { name: "cancel", icon: X, isCancel: true, title: "Back" },
+    { name: "left", workspace: "half-left", icon: ArrowLeft, title: "Left Half" },
+    { name: "right", workspace: "half-right", icon: ArrowRight, title: "Right Half" },
+  ];
+
+  // Submenu buttons for quarters arrangement
+  const quartersButtons: ToolbarButtonConfig[] = [
+    { name: "cancel", icon: X, isCancel: true, title: "Back" },
+    { name: "top-left", workspace: "quarter-tl", icon: ArrowUp, title: "Top Left" },
+    { name: "top-right", workspace: "quarter-tr", icon: ArrowUp, title: "Top Right" },
+    { name: "bot-left", workspace: "quarter-bl", icon: ArrowDown, title: "Bottom Left" },
+    { name: "bot-right", workspace: "quarter-br", icon: ArrowDown, title: "Bottom Right" },
+  ];
+
+  // Submenu buttons for thirds arrangement
+  const thirdsButtons: ToolbarButtonConfig[] = [
+    { name: "cancel", icon: X, isCancel: true, title: "Back" },
+    { name: "left", workspace: "third-left", icon: ArrowLeft, title: "Left Third" },
+    { name: "center", workspace: "third-center", icon: Maximize2, title: "Center Third" },
+    { name: "right", workspace: "third-right", icon: ArrowRight, title: "Right Third" },
   ];
 
   const settingsButtons: ToolbarButtonConfig[] = [
     { name: "Edit", icon: Settings2 },
     { name: "Hide", icon: EyeOff },
     { name: "Move", icon: Move },
-  ];
-
-  // Arrangement buttons for focused apps
-  const mainArrangeButtons: ToolbarButtonConfig[] = [
-    { name: "Cntr", icon: Maximize2, workspace: "center", title: "Center" },
-    { name: "Max", icon: Maximize, workspace: "maximize", title: "Maximize" },
-    { name: "Half", icon: Columns2, opensSubmenu: "halves", title: "Halves" },
-    { name: "Qrtr", icon: Grid2X2, opensSubmenu: "quarters", title: "Quarters" },
-    { name: "3rd", icon: Columns3, opensSubmenu: "thirds", title: "Thirds" },
-  ];
-
-  const halvesButtons: ToolbarButtonConfig[] = [
-    { name: "Back", icon: X, isCancel: true, title: "Back" },
-    { name: "Left", icon: ArrowLeft, workspace: "half-left", title: "Left Half" },
-    { name: "Right", icon: ArrowRight, workspace: "half-right", title: "Right Half" },
-  ];
-
-  const quartersButtons: ToolbarButtonConfig[] = [
-    { name: "Back", icon: X, isCancel: true, title: "Back" },
-    { name: "TL", icon: ArrowUp, workspace: "quarter-tl", title: "Top Left" },
-    { name: "TR", icon: ArrowUp, workspace: "quarter-tr", title: "Top Right" },
-    { name: "BL", icon: ArrowDown, workspace: "quarter-bl", title: "Bottom Left" },
-    { name: "BR", icon: ArrowDown, workspace: "quarter-br", title: "Bottom Right" },
-  ];
-
-  const thirdsButtons: ToolbarButtonConfig[] = [
-    { name: "Back", icon: X, isCancel: true, title: "Back" },
-    { name: "L3", icon: ArrowLeft, workspace: "third-left", title: "Left Third" },
-    { name: "C3", icon: Maximize2, workspace: "third-center", title: "Center Third" },
-    { name: "R3", icon: ArrowRight, workspace: "third-right", title: "Right Third" },
   ];
 
   const handleWorkspaceButtonClick = (button: ToolbarButtonConfig) => {
@@ -122,22 +114,14 @@ export function Toolbar({
     }
   };
 
-  const handleWorkspaceArrangeButtonClick = (button: ToolbarButtonConfig) => {
-    if (button.isCancel) {
-      navigateBack();
-    } else if (button.workspace) {
-      onWorkspaceClick(button.workspace);
-    }
-  };
-
-  const handleArrangeButtonClick = (button: ToolbarButtonConfig) => {
+  const handleAppArrangeButtonClick = (button: ToolbarButtonConfig) => {
     if (button.isCancel) {
       setArrangeSubmenu(null);
     } else if (button.opensSubmenu) {
       setArrangeSubmenu(button.opensSubmenu);
-    } else if (button.workspace) {
+    } else if (button.workspace && button.workspace !== "cancel") {
       onArrangeApp(button.workspace);
-      setArrangeSubmenu(null);
+      // Don't reset submenu - keep it open after action
     }
   };
 
@@ -152,11 +136,6 @@ export function Toolbar({
     if (currentSubmenu === "create") return "collapsing";
     if (navigationPath.length === 0 || navigationPath[0] !== "create") return "collapsed";
     return "collapsing";
-  };
-
-  const getArrangeAnimationState = () => {
-    if (currentSubmenu === "arrange" && navigationPath.length === 2) return "expanded";
-    return "collapsed";
   };
 
   const getSettingsAnimationState = () => {
@@ -213,125 +192,117 @@ export function Toolbar({
           Settings
         </div>
 
-        {/* Arrangement buttons - appear when app is focused and toolbar is expanded */}
-        {focusedAppId && expandLevel !== "collapsed" && !arrangeSubmenu && (
-          <>
-            {mainArrangeButtons.map((button, i) => {
-              const IconComponent = button.icon;
-              const distance = (i + 1) * 3.5; // 3.5rem spacing for square buttons
+        {/* Main arrangement buttons - appear when app is focused and toolbar is expanded */}
+        {appArrangeButtons.map((button, i) => {
+          const IconComponent = button.icon;
+          const distance = (i + 1) * 3.5; // 3.5rem spacing for square buttons
+          const isVisible = focusedAppId && expandLevel !== "collapsed" && !arrangeSubmenu;
 
-              return (
-                <div
-                  key={`arrange-${i}`}
-                  onClick={() => handleArrangeButtonClick(button)}
-                  className={[
-                    "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
-                    "bottom-0 opacity-100 z-10"
-                  ].join(" ")}
-                  style={{
-                    transform: `translateX(-${distance}rem)`,
-                    transitionDelay: `${75 + i * 75}ms`,
-                  }}
-                  role="button"
-                  title={button.title || button.name}
-                >
-                  <IconComponent size={16} strokeWidth={2.5} />
-                  <span className="text-[8px] font-bold">{button.name}</span>
-                </div>
-              );
-            })}
-          </>
-        )}
+          return (
+            <div
+              key={`arrange-${i}`}
+              onClick={() => isVisible && handleAppArrangeButtonClick(button)}
+              className={[
+                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                "bottom-0 z-10",
+                isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+              ].join(" ")}
+              style={{
+                transform: isVisible ? `translateX(-${distance}rem)` : `translateX(0)`,
+                transitionDelay: isVisible ? `${75 + i * 75}ms` : `${(6 - i) * 75}ms`,
+              }}
+              role="button"
+              title={button.title || button.name}
+            >
+              <IconComponent size={16} strokeWidth={2.5} />
+              <span className="text-[8px] font-bold">{button.name}</span>
+            </div>
+          );
+        })}
 
         {/* Halves submenu for arrangement */}
-        {focusedAppId && expandLevel !== "collapsed" && arrangeSubmenu === "halves" && (
-          <>
-            {halvesButtons.map((button, i) => {
-              const IconComponent = button.icon;
-              const distance = (i + 1) * 3.5; // 3.5rem spacing for square buttons
+        {halvesButtons.map((button, i) => {
+          const IconComponent = button.icon;
+          const distance = (i + 1) * 3.5; // 3.5rem spacing for square buttons
+          const isVisible = focusedAppId && expandLevel !== "collapsed" && arrangeSubmenu === "halves";
 
-              return (
-                <div
-                  key={`halves-${i}`}
-                  onClick={() => handleArrangeButtonClick(button)}
-                  className={[
-                    "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
-                    "bottom-0 opacity-100 z-10"
-                  ].join(" ")}
-                  style={{
-                    transform: `translateX(-${distance}rem)`,
-                    transitionDelay: `${75 + i * 75}ms`,
-                  }}
-                  role="button"
-                  title={button.title || button.name}
-                >
-                  <IconComponent size={16} strokeWidth={2.5} />
-                  <span className="text-[8px] font-bold">{button.name}</span>
-                </div>
-              );
-            })}
-          </>
-        )}
+          return (
+            <div
+              key={`halves-${i}`}
+              onClick={() => isVisible && handleAppArrangeButtonClick(button)}
+              className={[
+                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                "bottom-0 z-10",
+                isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+              ].join(" ")}
+              style={{
+                transform: isVisible ? `translateX(-${distance}rem)` : `translateX(0)`,
+                transitionDelay: isVisible ? `${75 + i * 75}ms` : `${(3 - i) * 75}ms`,
+              }}
+              role="button"
+              title={button.title || button.name}
+            >
+              <IconComponent size={16} strokeWidth={2.5} />
+              <span className="text-[8px] font-bold">{button.name}</span>
+            </div>
+          );
+        })}
 
         {/* Quarters submenu for arrangement */}
-        {focusedAppId && expandLevel !== "collapsed" && arrangeSubmenu === "quarters" && (
-          <>
-            {quartersButtons.map((button, i) => {
-              const IconComponent = button.icon;
-              const distance = (i + 1) * 3.5; // 3.5rem spacing for square buttons
+        {quartersButtons.map((button, i) => {
+          const IconComponent = button.icon;
+          const distance = (i + 1) * 3.5; // 3.5rem spacing for square buttons
+          const isVisible = focusedAppId && expandLevel !== "collapsed" && arrangeSubmenu === "quarters";
 
-              return (
-                <div
-                  key={`quarters-${i}`}
-                  onClick={() => handleArrangeButtonClick(button)}
-                  className={[
-                    "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
-                    "bottom-0 opacity-100 z-10"
-                  ].join(" ")}
-                  style={{
-                    transform: `translateX(-${distance}rem)`,
-                    transitionDelay: `${75 + i * 75}ms`,
-                  }}
-                  role="button"
-                  title={button.title || button.name}
-                >
-                  <IconComponent size={16} strokeWidth={2.5} />
-                  <span className="text-[8px] font-bold">{button.name}</span>
-                </div>
-              );
-            })}
-          </>
-        )}
+          return (
+            <div
+              key={`quarters-${i}`}
+              onClick={() => isVisible && handleAppArrangeButtonClick(button)}
+              className={[
+                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                "bottom-0 z-10",
+                isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+              ].join(" ")}
+              style={{
+                transform: isVisible ? `translateX(-${distance}rem)` : `translateX(0)`,
+                transitionDelay: isVisible ? `${75 + i * 75}ms` : `${(5 - i) * 75}ms`,
+              }}
+              role="button"
+              title={button.title || button.name}
+            >
+              <IconComponent size={16} strokeWidth={2.5} />
+              <span className="text-[8px] font-bold">{button.name}</span>
+            </div>
+          );
+        })}
 
         {/* Thirds submenu for arrangement */}
-        {focusedAppId && expandLevel !== "collapsed" && arrangeSubmenu === "thirds" && (
-          <>
-            {thirdsButtons.map((button, i) => {
-              const IconComponent = button.icon;
-              const distance = (i + 1) * 3.5; // 3.5rem spacing for square buttons
+        {thirdsButtons.map((button, i) => {
+          const IconComponent = button.icon;
+          const distance = (i + 1) * 3.5; // 3.5rem spacing for square buttons
+          const isVisible = focusedAppId && expandLevel !== "collapsed" && arrangeSubmenu === "thirds";
 
-              return (
-                <div
-                  key={`thirds-${i}`}
-                  onClick={() => handleArrangeButtonClick(button)}
-                  className={[
-                    "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
-                    "bottom-0 opacity-100 z-10"
-                  ].join(" ")}
-                  style={{
-                    transform: `translateX(-${distance}rem)`,
-                    transitionDelay: `${75 + i * 75}ms`,
-                  }}
-                  role="button"
-                  title={button.title || button.name}
-                >
-                  <IconComponent size={16} strokeWidth={2.5} />
-                  <span className="text-[8px] font-bold">{button.name}</span>
-                </div>
-              );
-            })}
-          </>
-        )}
+          return (
+            <div
+              key={`thirds-${i}`}
+              onClick={() => isVisible && handleAppArrangeButtonClick(button)}
+              className={[
+                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                "bottom-0 z-10",
+                isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+              ].join(" ")}
+              style={{
+                transform: isVisible ? `translateX(-${distance}rem)` : `translateX(0)`,
+                transitionDelay: isVisible ? `${75 + i * 75}ms` : `${(4 - i) * 75}ms`,
+              }}
+              role="button"
+              title={button.title || button.name}
+            >
+              <IconComponent size={16} strokeWidth={2.5} />
+              <span className="text-[8px] font-bold">{button.name}</span>
+            </div>
+          );
+        })}
 
         {/* Workspaces button - dynamic position based on expand level */}
         <div
@@ -371,16 +342,6 @@ export function Toolbar({
           onItemClick={handleCreateButtonClick}
         />
 
-        {/* Arrange Submenu */}
-        <ToolbarSubmenu
-          submenuId="arrange"
-          buttons={arrangeButtons}
-          isActive={expandLevel === "workspaces" && currentSubmenu === "arrange"}
-          animationState={getArrangeAnimationState()}
-          bottomPosition="bottom-16"
-          expandLevel={expandLevel}
-          onItemClick={handleWorkspaceArrangeButtonClick}
-        />
 
         {/* Settings Submenu */}
         <ToolbarSubmenu
