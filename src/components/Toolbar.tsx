@@ -76,32 +76,32 @@ export function Toolbar({
 
   // Arrangement buttons for focused apps
   const mainArrangeButtons: ToolbarButtonConfig[] = [
-    { name: "center", icon: Maximize2, workspace: "center" },
-    { name: "maximize", icon: Maximize, workspace: "maximize" },
-    { name: "halves", icon: Columns2, opensSubmenu: "halves" },
-    { name: "quarters", icon: Grid2X2, opensSubmenu: "quarters" },
-    { name: "thirds", icon: Columns3, opensSubmenu: "thirds" },
+    { name: "Center", icon: Maximize2, workspace: "center" },
+    { name: "Maximize", icon: Maximize, workspace: "maximize" },
+    { name: "Halves", icon: Columns2, opensSubmenu: "halves" },
+    { name: "Quarters", icon: Grid2X2, opensSubmenu: "quarters" },
+    { name: "Thirds", icon: Columns3, opensSubmenu: "thirds" },
   ];
 
   const halvesButtons: ToolbarButtonConfig[] = [
-    { name: "cancel", icon: X, isCancel: true },
-    { name: "left", icon: ArrowLeft, workspace: "half-left" },
-    { name: "right", icon: ArrowRight, workspace: "half-right" },
+    { name: "Back", icon: X, isCancel: true },
+    { name: "Left", icon: ArrowLeft, workspace: "half-left" },
+    { name: "Right", icon: ArrowRight, workspace: "half-right" },
   ];
 
   const quartersButtons: ToolbarButtonConfig[] = [
-    { name: "cancel", icon: X, isCancel: true },
-    { name: "top-left", icon: ArrowUp, workspace: "quarter-tl" },
-    { name: "top-right", icon: ArrowUp, workspace: "quarter-tr" },
-    { name: "bot-left", icon: ArrowDown, workspace: "quarter-bl" },
-    { name: "bot-right", icon: ArrowDown, workspace: "quarter-br" },
+    { name: "Back", icon: X, isCancel: true },
+    { name: "Top Left", icon: ArrowUp, workspace: "quarter-tl" },
+    { name: "Top Right", icon: ArrowUp, workspace: "quarter-tr" },
+    { name: "Bottom Left", icon: ArrowDown, workspace: "quarter-bl" },
+    { name: "Bottom Right", icon: ArrowDown, workspace: "quarter-br" },
   ];
 
   const thirdsButtons: ToolbarButtonConfig[] = [
-    { name: "cancel", icon: X, isCancel: true },
-    { name: "left", icon: ArrowLeft, workspace: "third-left" },
-    { name: "center", icon: Maximize2, workspace: "third-center" },
-    { name: "right", icon: ArrowRight, workspace: "third-right" },
+    { name: "Back", icon: X, isCancel: true },
+    { name: "Left Third", icon: ArrowLeft, workspace: "third-left" },
+    { name: "Center Third", icon: Maximize2, workspace: "third-center" },
+    { name: "Right Third", icon: ArrowRight, workspace: "third-right" },
   ];
 
   const handleWorkspaceButtonClick = (button: ToolbarButtonConfig) => {
@@ -236,7 +236,7 @@ export function Toolbar({
                   title={button.name}
                 >
                   <IconComponent size={18} strokeWidth={2.5} />
-                  <span className="text-[9px] font-medium capitalize whitespace-nowrap">{button.name}</span>
+                  <span className="text-[9px] font-medium whitespace-nowrap">{button.name}</span>
                 </div>
               );
             })}
@@ -248,14 +248,14 @@ export function Toolbar({
           <>
             {halvesButtons.map((button, i) => {
               const IconComponent = button.icon;
-              const distance = (i + 1) * 4; // 4rem spacing
-              
+              const distance = (i + 1) * 5; // 5rem spacing for wider buttons
+
               return (
                 <div
                   key={`halves-${i}`}
                   onClick={() => handleArrangeButtonClick(button)}
                   className={[
-                    "absolute right-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-full w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                    "absolute right-0 flex flex-col items-center justify-center gap-1 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl px-3 py-2 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
                     "bottom-32 opacity-100 z-10"
                   ].join(" ")}
                   style={{
@@ -265,7 +265,8 @@ export function Toolbar({
                   role="button"
                   title={button.name}
                 >
-                  <IconComponent size={20} strokeWidth={2.5} />
+                  <IconComponent size={18} strokeWidth={2.5} />
+                  <span className="text-[9px] font-medium whitespace-nowrap">{button.name}</span>
                 </div>
               );
             })}
@@ -277,14 +278,14 @@ export function Toolbar({
           <>
             {quartersButtons.map((button, i) => {
               const IconComponent = button.icon;
-              const distance = (i + 1) * 4; // 4rem spacing
-              
+              const distance = (i + 1) * 5; // 5rem spacing for wider buttons
+
               return (
                 <div
                   key={`quarters-${i}`}
                   onClick={() => handleArrangeButtonClick(button)}
                   className={[
-                    "absolute right-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-full w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                    "absolute right-0 flex flex-col items-center justify-center gap-1 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl px-3 py-2 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
                     "bottom-32 opacity-100 z-10"
                   ].join(" ")}
                   style={{
@@ -294,7 +295,8 @@ export function Toolbar({
                   role="button"
                   title={button.name}
                 >
-                  <IconComponent size={20} strokeWidth={2.5} />
+                  <IconComponent size={18} strokeWidth={2.5} />
+                  <span className="text-[9px] font-medium whitespace-nowrap">{button.name}</span>
                 </div>
               );
             })}
@@ -306,14 +308,14 @@ export function Toolbar({
           <>
             {thirdsButtons.map((button, i) => {
               const IconComponent = button.icon;
-              const distance = (i + 1) * 4; // 4rem spacing
-              
+              const distance = (i + 1) * 5; // 5rem spacing for wider buttons
+
               return (
                 <div
                   key={`thirds-${i}`}
                   onClick={() => handleArrangeButtonClick(button)}
                   className={[
-                    "absolute right-0 flex items-center justify-center bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-full w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
+                    "absolute right-0 flex flex-col items-center justify-center gap-1 bg-white/10 backdrop-blur-[27px] outline outline-white/30 rounded-xl px-3 py-2 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-white/20",
                     "bottom-32 opacity-100 z-10"
                   ].join(" ")}
                   style={{
@@ -323,7 +325,8 @@ export function Toolbar({
                   role="button"
                   title={button.name}
                 >
-                  <IconComponent size={20} strokeWidth={2.5} />
+                  <IconComponent size={18} strokeWidth={2.5} />
+                  <span className="text-[9px] font-medium whitespace-nowrap">{button.name}</span>
                 </div>
               );
             })}
