@@ -387,7 +387,21 @@ export function App() {
 
   // Handler for workspace button clicks
   const handleWorkspaceClick = (workspace: string) => {
-    const config = WORKSPACE_CONFIGS[workspace];
+    let config = WORKSPACE_CONFIGS[workspace];
+    
+    // If not in default configs, check custom workspace configs
+    if (!config) {
+      try {
+        const customConfigs = localStorage.getItem('customWorkspaceConfigs');
+        if (customConfigs) {
+          const configs = JSON.parse(customConfigs);
+          config = configs[workspace];
+        }
+      } catch (e) {
+        console.error('Failed to load custom workspace config:', e);
+      }
+    }
+    
     if (!config) return;
 
     setAppRegistry(prev => {
@@ -734,6 +748,7 @@ export function App() {
           onZonesReady={setLayoutZones}
           activeZone={activeLayoutZone}
           setOnDragStartCallback={setOnDragStartCallback}
+          appRegistry={appRegistry}
         />
       </div>
     </div>

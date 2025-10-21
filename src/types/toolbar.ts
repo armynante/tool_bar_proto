@@ -4,6 +4,7 @@ export interface ToolbarButtonConfig {
   name: string;
   workspace?: string;
   icon: LucideIcon;
+  emoji?: string; // Optional emoji icon to display instead of Lucide icon
   /** @deprecated Will be auto-calculated based on button index */
   shift?: string;
   /** @deprecated Will be auto-calculated based on button index */

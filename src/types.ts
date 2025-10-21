@@ -19,6 +19,8 @@ export interface WorkspaceAppConfig {
 
 export interface WorkspaceConfig {
   apps: WorkspaceAppConfig[];
+  layoutType?: string; // The layout type used (quarters, splits, etc.)
+  icon?: string; // Workspace icon (emoji or Lucide icon name)
 }
 
 export interface AppRegistry {

@@ -1,6 +1,6 @@
 import { ToolbarButtonConfig, SubmenuAnimationState } from '../types/toolbar';
 import { useState } from 'react';
-import { Edit, ArrowLeftRight, ArrowUpDown, Columns3, Columns } from 'lucide-react';
+import { Edit, ArrowLeftRight, ArrowUpDown, Columns3, Columns, Minimize2, Maximize2, SquareStack, PanelLeft, PanelRight, PanelTop, PanelBottom } from 'lucide-react';
 
 interface SplitOption {
   name: string;
@@ -16,6 +16,19 @@ const splitOptions: SplitOption[] = [
   { name: "3H", icon: Columns, workspace: "thirds-horizontal", title: "Thirds Horizontal" },
 ];
 
+const quartersOptions: SplitOption[] = [
+  { name: "Small", icon: Minimize2, workspace: "quarters-small", title: "Quarters - Small Padding" },
+  { name: "Med", icon: SquareStack, workspace: "quarters", title: "Quarters - Medium Padding" },
+  { name: "Large", icon: Maximize2, workspace: "quarters-large", title: "Quarters - Large Padding" },
+];
+
+const twoQuartersOptions: SplitOption[] = [
+  { name: "2Q-L", icon: PanelLeft, workspace: "two-quarters-left", title: "Two Quarters Left + Half Right" },
+  { name: "2Q-R", icon: PanelRight, workspace: "two-quarters-right", title: "Two Quarters Right + Half Left" },
+  { name: "2Q-T", icon: PanelTop, workspace: "two-quarters-top", title: "Two Quarters Top + Half Bottom" },
+  { name: "2Q-B", icon: PanelBottom, workspace: "two-quarters-bottom", title: "Two Quarters Bottom + Half Top" },
+];
+
 interface ToolbarSubmenuProps {
   submenuId: string;
   buttons: ToolbarButtonConfig[];
@@ -24,6 +37,7 @@ interface ToolbarSubmenuProps {
   bottomPosition: 'bottom-16' | 'bottom-32';
   expandLevel: string;
   onItemClick?: (button: ToolbarButtonConfig) => void;
+  isSaveInputVisible?: boolean;
 }
 
 // Calculate transform distance based on button index
@@ -46,9 +60,12 @@ export function ToolbarSubmenu({
   bottomPosition,
   expandLevel,
   onItemClick,
+  isSaveInputVisible = false,
 }: ToolbarSubmenuProps) {
   const [hoveredButtonIndex, setHoveredButtonIndex] = useState<number | null>(null);
   const [splitsMenuOpen, setSplitsMenuOpen] = useState(false);
+  const [quartersMenuOpen, setQuartersMenuOpen] = useState(false);
+  const [twoQuartersMenuOpen, setTwoQuartersMenuOpen] = useState(false);
 
   const getAnimationClasses = (index: number) => {
     // When collapsed or collapsing, items should be hidden at center
@@ -80,9 +97,14 @@ export function ToolbarSubmenu({
         const isHovered = hoveredButtonIndex === i;
         // Show edit button only for workspaces (not for create button which has opensSubmenu)
         const showEditButton = isHovered && !button.opensSubmenu && submenuId === 'workspaces';
-        // Check if this is the splits button
+        // Check if this is a button with sub-options
         const isSplitsButton = button.workspace === 'splits';
+        const isQuartersButton = button.workspace === 'quarters';
+        const isTwoQuartersButton = button.workspace === 'two-quarters-left';
+        
         const showSplitOptions = (isHovered || splitsMenuOpen) && isSplitsButton && submenuId === 'layouts';
+        const showQuartersOptions = (isHovered || quartersMenuOpen) && isQuartersButton && submenuId === 'layouts';
+        const showTwoQuartersOptions = (isHovered || twoQuartersMenuOpen) && isTwoQuartersButton && submenuId === 'layouts';
         
         return (
           <div
@@ -108,19 +130,33 @@ export function ToolbarSubmenu({
               <div
                 onClick={() => {
                   if (isSplitsButton) {
-                    // Toggle the splits menu instead of closing
+                    // Toggle the splits menu
                     setSplitsMenuOpen(!splitsMenuOpen);
+                  } else if (isQuartersButton) {
+                    // Toggle the quarters menu
+                    setQuartersMenuOpen(!quartersMenuOpen);
+                  } else if (isTwoQuartersButton) {
+                    // Toggle the two quarters menu
+                    setTwoQuartersMenuOpen(!twoQuartersMenuOpen);
                   } else {
                     onItemClick?.(button);
                   }
                 }}
                 className={[
                   "flex flex-col justify-center items-center bg-white/10 hover:bg-white/20 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
-                  isSplitsButton && splitsMenuOpen ? "opacity-50" : "opacity-100"
+                  (isSplitsButton && splitsMenuOpen) || (isQuartersButton && quartersMenuOpen) || (isTwoQuartersButton && twoQuartersMenuOpen) 
+                    ? "opacity-50" 
+                    : (isSaveInputVisible && submenuId === "create" && button.name !== "save" && !button.isCancel)
+                      ? "opacity-50"
+                      : "opacity-100"
                 ].join(" ")}
                 role="button"
               >
-              <IconComponent className="text-white" size={16} strokeWidth={2.5} />
+              {button.emoji ? (
+                <span className="text-white text-base">{button.emoji}</span>
+              ) : (
+                <IconComponent className="text-white" size={16} strokeWidth={2.5} />
+              )}
               <div className="mt-0.5 font-bold text-[6px] text-white">
                 {button.name}
               </div>
@@ -179,6 +215,76 @@ export function ToolbarSubmenu({
                     <SplitIcon className="text-white" size={16} strokeWidth={2.5} />
                     <div className="mt-0.5 font-bold text-[6px] text-white">
                       {splitOption.name}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* Quarters options - slide up when hovering quarters button */}
+              {isQuartersButton && quartersOptions.map((quartersOption, idx) => {
+                const QuartersIcon = quartersOption.icon;
+                const bottomDistance = (idx + 1) * 3.75;
+                const optionOpacity = showQuartersOptions 
+                  ? (quartersMenuOpen ? "opacity-100" : "opacity-50") 
+                  : "opacity-0";
+                
+                return (
+                  <div
+                    key={quartersOption.workspace}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onItemClick?.({ ...button, workspace: quartersOption.workspace, name: quartersOption.name });
+                    }}
+                    className={[
+                      "absolute left-0 flex flex-col justify-center items-center bg-white/10 hover:bg-white/30 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
+                      optionOpacity,
+                      showQuartersOptions ? "pointer-events-auto" : "pointer-events-none"
+                    ].join(" ")}
+                    style={{
+                      bottom: showQuartersOptions ? `${bottomDistance}rem` : '0',
+                      transitionDelay: showQuartersOptions ? `${idx * 50}ms` : `${(quartersOptions.length - idx) * 50}ms`,
+                    }}
+                    role="button"
+                    title={quartersOption.title}
+                  >
+                    <QuartersIcon className="text-white" size={16} strokeWidth={2.5} />
+                    <div className="mt-0.5 font-bold text-[6px] text-white">
+                      {quartersOption.name}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* Two Quarters options - slide up when hovering two quarters button */}
+              {isTwoQuartersButton && twoQuartersOptions.map((twoQuartersOption, idx) => {
+                const TwoQuartersIcon = twoQuartersOption.icon;
+                const bottomDistance = (idx + 1) * 3.75;
+                const optionOpacity = showTwoQuartersOptions 
+                  ? (twoQuartersMenuOpen ? "opacity-100" : "opacity-50") 
+                  : "opacity-0";
+                
+                return (
+                  <div
+                    key={twoQuartersOption.workspace}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onItemClick?.({ ...button, workspace: twoQuartersOption.workspace, name: twoQuartersOption.name });
+                    }}
+                    className={[
+                      "absolute left-0 flex flex-col justify-center items-center bg-white/10 hover:bg-white/30 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
+                      optionOpacity,
+                      showTwoQuartersOptions ? "pointer-events-auto" : "pointer-events-none"
+                    ].join(" ")}
+                    style={{
+                      bottom: showTwoQuartersOptions ? `${bottomDistance}rem` : '0',
+                      transitionDelay: showTwoQuartersOptions ? `${idx * 50}ms` : `${(twoQuartersOptions.length - idx) * 50}ms`,
+                    }}
+                    role="button"
+                    title={twoQuartersOption.title}
+                  >
+                    <TwoQuartersIcon className="text-white" size={16} strokeWidth={2.5} />
+                    <div className="mt-0.5 font-bold text-[6px] text-white">
+                      {twoQuartersOption.name}
                     </div>
                   </div>
                 );

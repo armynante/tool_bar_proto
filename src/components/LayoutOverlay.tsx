@@ -42,7 +42,7 @@ export function LayoutOverlay({ layoutType, activeZone, onClose, onZonesReady }:
 
     switch (layoutType) {
       case "quarters":
-        // Four boxes in each corner
+        // Four boxes in each corner (medium padding)
         newZones = [
           {
             id: "quarter-tl",
@@ -74,6 +74,84 @@ export function LayoutOverlay({ layoutType, activeZone, onClose, onZonesReady }:
             y: screenHeight / 2 + padding / 2,
             width: screenWidth / 2 - padding * 1.5,
             height: screenHeight / 2 - padding * 1.5,
+            label: "Bottom Right",
+          },
+        ];
+        break;
+
+      case "quarters-small":
+        // Four boxes in each corner (small padding - tighter spacing)
+        const smallPadding = padding * 0.5;
+        newZones = [
+          {
+            id: "quarter-tl",
+            x: smallPadding,
+            y: smallPadding,
+            width: screenWidth / 2 - smallPadding * 1.5,
+            height: screenHeight / 2 - smallPadding * 1.5,
+            label: "Top Left",
+          },
+          {
+            id: "quarter-tr",
+            x: screenWidth / 2 + smallPadding / 2,
+            y: smallPadding,
+            width: screenWidth / 2 - smallPadding * 1.5,
+            height: screenHeight / 2 - smallPadding * 1.5,
+            label: "Top Right",
+          },
+          {
+            id: "quarter-bl",
+            x: smallPadding,
+            y: screenHeight / 2 + smallPadding / 2,
+            width: screenWidth / 2 - smallPadding * 1.5,
+            height: screenHeight / 2 - smallPadding * 1.5,
+            label: "Bottom Left",
+          },
+          {
+            id: "quarter-br",
+            x: screenWidth / 2 + smallPadding / 2,
+            y: screenHeight / 2 + smallPadding / 2,
+            width: screenWidth / 2 - smallPadding * 1.5,
+            height: screenHeight / 2 - smallPadding * 1.5,
+            label: "Bottom Right",
+          },
+        ];
+        break;
+
+      case "quarters-large":
+        // Four boxes in each corner (large padding - more spacing)
+        const largePadding = padding * 1.5;
+        newZones = [
+          {
+            id: "quarter-tl",
+            x: largePadding,
+            y: largePadding,
+            width: screenWidth / 2 - largePadding * 1.5,
+            height: screenHeight / 2 - largePadding * 1.5,
+            label: "Top Left",
+          },
+          {
+            id: "quarter-tr",
+            x: screenWidth / 2 + largePadding / 2,
+            y: largePadding,
+            width: screenWidth / 2 - largePadding * 1.5,
+            height: screenHeight / 2 - largePadding * 1.5,
+            label: "Top Right",
+          },
+          {
+            id: "quarter-bl",
+            x: largePadding,
+            y: screenHeight / 2 + largePadding / 2,
+            width: screenWidth / 2 - largePadding * 1.5,
+            height: screenHeight / 2 - largePadding * 1.5,
+            label: "Bottom Left",
+          },
+          {
+            id: "quarter-br",
+            x: screenWidth / 2 + largePadding / 2,
+            y: screenHeight / 2 + largePadding / 2,
+            width: screenWidth / 2 - largePadding * 1.5,
+            height: screenHeight / 2 - largePadding * 1.5,
             label: "Bottom Right",
           },
         ];
@@ -135,6 +213,96 @@ export function LayoutOverlay({ layoutType, activeZone, onClose, onZonesReady }:
             width: screenWidth / 2 - padding * 1.5,
             height: screenHeight - padding * 2,
             label: "Right Half",
+          },
+        ];
+        break;
+
+      case "two-quarters-right":
+        // Two quarters on the right and a half on the left
+        newZones = [
+          {
+            id: "half-left",
+            x: padding,
+            y: padding,
+            width: screenWidth / 2 - padding * 1.5,
+            height: screenHeight - padding * 2,
+            label: "Left Half",
+          },
+          {
+            id: "quarter-tr",
+            x: screenWidth / 2 + padding / 2,
+            y: padding,
+            width: screenWidth / 2 - padding * 1.5,
+            height: screenHeight / 2 - padding * 1.5,
+            label: "Top Right",
+          },
+          {
+            id: "quarter-br",
+            x: screenWidth / 2 + padding / 2,
+            y: screenHeight / 2 + padding / 2,
+            width: screenWidth / 2 - padding * 1.5,
+            height: screenHeight / 2 - padding * 1.5,
+            label: "Bottom Right",
+          },
+        ];
+        break;
+
+      case "two-quarters-top":
+        // Two quarters on top and a half on bottom
+        newZones = [
+          {
+            id: "quarter-tl",
+            x: padding,
+            y: padding,
+            width: screenWidth / 2 - padding * 1.5,
+            height: screenHeight / 2 - padding * 1.5,
+            label: "Top Left",
+          },
+          {
+            id: "quarter-tr",
+            x: screenWidth / 2 + padding / 2,
+            y: padding,
+            width: screenWidth / 2 - padding * 1.5,
+            height: screenHeight / 2 - padding * 1.5,
+            label: "Top Right",
+          },
+          {
+            id: "half-bottom",
+            x: padding,
+            y: screenHeight / 2 + padding / 2,
+            width: screenWidth - padding * 2,
+            height: screenHeight / 2 - padding * 1.5,
+            label: "Bottom Half",
+          },
+        ];
+        break;
+
+      case "two-quarters-bottom":
+        // Two quarters on bottom and a half on top
+        newZones = [
+          {
+            id: "half-top",
+            x: padding,
+            y: padding,
+            width: screenWidth - padding * 2,
+            height: screenHeight / 2 - padding * 1.5,
+            label: "Top Half",
+          },
+          {
+            id: "quarter-bl",
+            x: padding,
+            y: screenHeight / 2 + padding / 2,
+            width: screenWidth / 2 - padding * 1.5,
+            height: screenHeight / 2 - padding * 1.5,
+            label: "Bottom Left",
+          },
+          {
+            id: "quarter-br",
+            x: screenWidth / 2 + padding / 2,
+            y: screenHeight / 2 + padding / 2,
+            width: screenWidth / 2 - padding * 1.5,
+            height: screenHeight / 2 - padding * 1.5,
+            label: "Bottom Right",
           },
         ];
         break;

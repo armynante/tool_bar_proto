@@ -4,6 +4,7 @@ import { ToolbarSubmenu } from "./ToolbarSubmenu";
 import { ToolbarButtonConfig } from "../types/toolbar";
 import { useNestedSubmenuNavigation } from "../hooks/useSubmenuAnimation";
 import { LayoutOverlay, LayoutType, Zone } from "./LayoutOverlay";
+import { AppRegistry, WorkspaceConfig } from "../types";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
@@ -21,6 +22,7 @@ interface ToolbarProps {
   onZonesReady?: (zones: Zone[]) => void;
   activeZone: string | null;
   setOnDragStartCallback?: (callback: (() => void) | null) => void;
+  appRegistry?: AppRegistry;
 }
 
 export function Toolbar({ 
@@ -36,11 +38,53 @@ export function Toolbar({
   onCloseLayout,
   onZonesReady,
   activeZone,
-  setOnDragStartCallback
+  setOnDragStartCallback,
+  appRegistry
 }: ToolbarProps) {
   const { navigationPath, currentSubmenu, navigateToSubmenu, navigateBack, getParentLabel } = useNestedSubmenuNavigation(300);
   const [arrangeSubmenu, setArrangeSubmenu] = useState<string | null>(null);
   const [activeLayoutType, setActiveLayoutType] = useState<LayoutType>(null);
+  const [isSaveInputVisible, setIsSaveInputVisible] = useState(false);
+  const [layoutName, setLayoutName] = useState("");
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [editingWorkspaceKey, setEditingWorkspaceKey] = useState<string | null>(null);
+  const [workspaceButtons, setWorkspaceButtons] = useState<ToolbarButtonConfig[]>(() => {
+    // Load saved workspaces from localStorage
+    const savedWorkspaces = localStorage.getItem('customWorkspaces');
+    const defaultButtons = [
+      { name: "Create", workspace: "create", icon: Plus, opensSubmenu: "create" },
+      { name: "Main", workspace: "main", icon: Home },
+      { name: "Interview", workspace: "interview", icon: MessageSquare },
+      { name: "Nexus", workspace: "nexus", icon: Box },
+    ];
+    
+    if (savedWorkspaces) {
+      try {
+        const custom = JSON.parse(savedWorkspaces);
+        // Insert custom workspaces after Create button
+        const buttons: ToolbarButtonConfig[] = [defaultButtons[0]];
+        custom.forEach((ws: any) => {
+          const iconMap: Record<string, any> = {
+            'Home': Home, 'Box': Box, 'Grid': Grid,
+            'MessageSquare': MessageSquare, 'Eye': Eye, 'Grid2X2': Grid2X2,
+          };
+          const button: ToolbarButtonConfig = {
+            name: ws.name,
+            workspace: ws.key,
+            icon: ws.iconName ? iconMap[ws.iconName] || Box : Box,
+            emoji: ws.emoji,
+            title: `${ws.name} workspace`
+          };
+          buttons.push(button);
+        });
+        buttons.push(...defaultButtons.slice(1));
+        return buttons;
+      } catch (e) {
+        console.error('Failed to load custom workspaces:', e);
+      }
+    }
+    return defaultButtons;
+  });
 
   // Reset submenu when expandLevel changes
   useEffect(() => {
@@ -78,13 +122,6 @@ export function Toolbar({
       setOnDragStartCallback(null);
     }
   }, [activeLayoutType, currentSubmenu, navigationPath.length, setOnDragStartCallback, navigateBack]);
-
-  const workspaceButtons: ToolbarButtonConfig[] = [
-    { name: "Create", workspace: "create", icon: Plus, opensSubmenu: "create" },
-    { name: "Main", workspace: "main", icon: Home },
-    { name: "Interview", workspace: "interview", icon: MessageSquare },
-    { name: "Nexus", workspace: "nexus", icon: Box },
-  ];
 
   const createModeButtons: ToolbarButtonConfig[] = [
     { name: "cancel", workspace: "create", icon: X, isCancel: true },
@@ -140,6 +177,15 @@ export function Toolbar({
   const handleWorkspaceButtonClick = (button: ToolbarButtonConfig) => {
     if (button.opensSubmenu) {
       navigateToSubmenu(button.opensSubmenu);
+    } else if (button.workspace === 'edit') {
+      // Handle edit mode - load workspace data into save prompt
+      const workspaceToEdit = workspaceButtons.find(wb => wb.name === button.name);
+      if (workspaceToEdit && workspaceToEdit.workspace) {
+        setEditingWorkspaceKey(workspaceToEdit.workspace);
+        setLayoutName(workspaceToEdit.name);
+        setSelectedIcon(workspaceToEdit.emoji || `lucide:${workspaceToEdit.icon.name || 'Box'}`);
+        setIsSaveInputVisible(true);
+      }
     } else if (button.workspace) {
       onWorkspaceClick(button.workspace);
     }
@@ -147,14 +193,35 @@ export function Toolbar({
 
   const handleCreateButtonClick = (button: ToolbarButtonConfig) => {
     if (button.isCancel) {
-      navigateBack();
-      setActiveLayoutType(null);
-      onCloseLayout?.(); // This will clear the zones when cancel is pressed in create menu
+      if (isSaveInputVisible) {
+        // Cancel from save input - handled inside modal now
+        return;
+      } else {
+        // Cancel from create menu
+        navigateBack();
+        setActiveLayoutType(null);
+        onCloseLayout?.();
+      }
+    } else if (button.name === "save") {
+      if (isSaveInputVisible) {
+        // Save handled inside modal now
+        return;
+      } else {
+        // Show save input
+        setIsSaveInputVisible(true);
+      }
     } else if (button.opensSubmenu) {
       navigateToSubmenu(button.opensSubmenu);
     } else if (button.workspace) {
       onWorkspaceClick(button.workspace);
     }
+  };
+
+  const handleCancelSave = () => {
+    setIsSaveInputVisible(false);
+    setLayoutName("");
+    setSelectedIcon(null);
+    setEditingWorkspaceKey(null);
   };
 
   const handleLayoutsButtonClick = (button: ToolbarButtonConfig) => {
@@ -166,6 +233,110 @@ export function Toolbar({
       // Set the active layout to show the overlay
       setActiveLayoutType(button.workspace as LayoutType);
     }
+  };
+
+  const handleSaveLayout = () => {
+    // Validate inputs
+    if (!layoutName.trim()) {
+      alert("Please enter a layout name");
+      return;
+    }
+    if (!selectedIcon) {
+      alert("Please select an icon");
+      return;
+    }
+
+    // Get visible apps and their current positions/sizes
+    const visibleApps = appRegistry ? Object.values(appRegistry).filter(app => app.isVisible) : [];
+    
+    // Create workspace key from layout name (lowercase, no spaces)
+    const workspaceKey = layoutName.toLowerCase().replace(/\s+/g, '-');
+    
+    // Determine the icon component and emoji
+    let iconComponent;
+    let emojiIcon;
+    
+    if (selectedIcon.startsWith('lucide:')) {
+      // Extract Lucide icon name and map to component
+      const iconName = selectedIcon.replace('lucide:', '');
+      const iconMap: Record<string, any> = {
+        'Home': Home,
+        'Box': Box,
+        'Grid': Grid,
+        'MessageSquare': MessageSquare,
+        'Eye': Eye,
+        'Grid2X2': Grid2X2,
+      };
+      iconComponent = iconMap[iconName] || Box;
+    } else {
+      // For emoji, store the emoji and use a fallback icon
+      emojiIcon = selectedIcon;
+      iconComponent = Box;
+    }
+
+    // Add new workspace button (insert after "Create" button which is at index 0)
+    const newButton: ToolbarButtonConfig = {
+      name: layoutName,
+      workspace: workspaceKey,
+      icon: iconComponent,
+      emoji: emojiIcon,
+      title: `${layoutName} workspace`
+    };
+    
+    setWorkspaceButtons(prev => {
+      // Insert after Create button (index 0)
+      const newButtons = [...prev];
+      newButtons.splice(1, 0, newButton);
+      return newButtons;
+    });
+
+    // Create workspace config
+    const workspaceConfig: WorkspaceConfig = {
+      apps: visibleApps.map(app => ({
+        id: app.id,
+        position: app.position,
+        size: app.size
+      })),
+      layoutType: activeLayoutType || undefined,
+      icon: selectedIcon
+    };
+
+    // Save to localStorage for persistence
+    try {
+      // Save workspace config
+      const existingConfigs = localStorage.getItem('customWorkspaceConfigs');
+      const configs = existingConfigs ? JSON.parse(existingConfigs) : {};
+      configs[workspaceKey] = workspaceConfig;
+      localStorage.setItem('customWorkspaceConfigs', JSON.stringify(configs));
+
+      // Save workspace button metadata
+      const existingWorkspaces = localStorage.getItem('customWorkspaces');
+      const workspaces = existingWorkspaces ? JSON.parse(existingWorkspaces) : [];
+      workspaces.push({
+        key: workspaceKey,
+        name: layoutName,
+        emoji: emojiIcon,
+        iconName: emojiIcon ? undefined : selectedIcon.replace('lucide:', '')
+      });
+      localStorage.setItem('customWorkspaces', JSON.stringify(workspaces));
+
+      console.log("Saved workspace:", workspaceKey, workspaceConfig);
+    } catch (e) {
+      console.error('Failed to save workspace:', e);
+    }
+
+    // Trigger workspace click to load the saved layout
+    onWorkspaceClick(workspaceKey);
+
+    // Reset state
+    setIsSaveInputVisible(false);
+    setLayoutName("");
+    setSelectedIcon(null);
+    setActiveLayoutType(null);
+    onCloseLayout?.();
+    
+    // Navigate back to workspaces
+    navigateBack();
   };
 
   const handleAppArrangeButtonClick = (button: ToolbarButtonConfig) => {
@@ -392,6 +563,7 @@ export function Toolbar({
           bottomPosition="bottom-16"
           expandLevel={expandLevel}
           onItemClick={handleCreateButtonClick}
+          isSaveInputVisible={isSaveInputVisible}
         />
 
         {/* Layouts Submenu */}
@@ -404,6 +576,89 @@ export function Toolbar({
           expandLevel={expandLevel}
           onItemClick={handleLayoutsButtonClick}
         />
+
+        {/* Save Input Box - shown above create buttons when save is clicked */}
+        {isSaveInputVisible && currentSubmenu === "create" && (
+          <div className="right-8 bottom-32 z-[9999] absolute bg-white/10 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] p-5 rounded-xl outline outline-white/30 w-[600px] transition-all duration-300">
+            <div className="space-y-4">
+              {/* Top Row - Layout Name Input */}
+              <div>
+                <label className="block mb-2 font-bold text-white text-sm">Layout Name</label>
+                <input
+                  type="text"
+                  value={layoutName}
+                  onChange={(e) => setLayoutName(e.target.value.slice(0, 10))}
+                  maxLength={10}
+                  placeholder="Max 10 chars"
+                  className="bg-white/20 px-3 py-2 border border-white/30 focus:border-white/60 rounded-lg focus:outline-none w-full text-white placeholder:text-white/40 text-base"
+                />
+                <div className="mt-1 text-white/60 text-xs">{layoutName.length}/10</div>
+              </div>
+
+              {/* Middle Row - Icon Picker */}
+              <div>
+                <label className="block mb-2 font-bold text-white text-sm">Icon</label>
+                <div className="flex gap-3">
+                  <div className="gap-2 grid grid-cols-6">
+                    {/* Emoji icons */}
+                    {['🔶', '✅', '📱', '💻', '🎨', '📊', '🏠', '💼', '🌟', '⚡', '🎯', '🚀'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => setSelectedIcon(emoji)}
+                        className={[
+                          "w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer text-lg",
+                          selectedIcon === emoji 
+                            ? "bg-white/40 scale-110 ring-2 ring-white" 
+                            : "bg-white/10 hover:bg-white/20"
+                        ].join(" ")}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="gap-2 grid grid-cols-3">
+                    {/* Lucide icons */}
+                    {[Home, Box, Grid, MessageSquare, Eye, Grid2X2].map((IconComp, idx) => (
+                      <button
+                        key={`lucide-${idx}`}
+                        onClick={() => setSelectedIcon(`lucide:${IconComp.name}`)}
+                        className={[
+                          "w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer",
+                          selectedIcon === `lucide:${IconComp.name}` 
+                            ? "bg-white/40 scale-110 ring-2 ring-white" 
+                            : "bg-white/10 hover:bg-white/20"
+                        ].join(" ")}
+                      >
+                        <IconComp size={16} className="text-white" strokeWidth={2.5} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Row - Apps in Layout */}
+              <div>
+                <label className="block mb-2 font-bold text-white text-sm">Apps in Layout</label>
+                <div className="flex flex-wrap gap-2">
+                  {appRegistry && Object.values(appRegistry)
+                    .filter(app => app.isVisible)
+                    .map(app => (
+                      <div
+                        key={app.id}
+                        className="flex justify-center items-center bg-white/10 rounded-lg w-9 h-9 text-lg"
+                        title={app.title}
+                      >
+                        {app.dockIcon || '📦'}
+                      </div>
+                    ))}
+                  {(!appRegistry || Object.values(appRegistry).filter(app => app.isVisible).length === 0) && (
+                    <div className="text-white/60 text-sm">No visible apps</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 
