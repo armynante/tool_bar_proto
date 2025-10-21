@@ -430,6 +430,48 @@ export function App() {
       });
       return updated;
     });
+
+    // Restore folders from saved config
+    if (config.folders && config.folders.length > 0) {
+      setFolderRegistry(prev => {
+        const updated = { ...prev };
+        const appMaxZ = Math.max(
+          ...Object.values(appRegistry).map(app => app.zIndex),
+          ...Object.values(prev).map(folder => folder.zIndex)
+        );
+        let currentFolderZ = appMaxZ;
+
+        config.folders?.forEach(folderConfig => {
+          const folderId = `folder-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          currentFolderZ += 1;
+
+          // Make sure all apps in the folder are hidden
+          setAppRegistry(prevApps => {
+            const updatedApps = { ...prevApps };
+            folderConfig.apps.forEach(appId => {
+              if (updatedApps[appId]) {
+                updatedApps[appId] = {
+                  ...updatedApps[appId],
+                  isVisible: false,
+                };
+              }
+            });
+            return updatedApps;
+          });
+
+          updated[folderId] = {
+            id: folderId,
+            apps: folderConfig.apps,
+            activeAppId: folderConfig.activeAppId,
+            position: folderConfig.position,
+            size: folderConfig.size,
+            zIndex: currentFolderZ,
+          };
+        });
+
+        return updated;
+      });
+    }
   };
 
   // Handler for arranging the focused app
@@ -927,6 +969,7 @@ export function App() {
           setOnDragStartCallback={setOnDragStartCallback}
           appRegistry={appRegistry}
           onClearFocus={() => setFocusedAppId(null)}
+          folderRegistry={folderRegistry}
         />
       </div>
     </div>

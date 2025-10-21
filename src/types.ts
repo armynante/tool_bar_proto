@@ -21,6 +21,7 @@ export interface WorkspaceConfig {
   apps: WorkspaceAppConfig[];
   layoutType?: string; // The layout type used (quarters, splits, etc.)
   icon?: string; // Workspace icon (emoji or Lucide icon name)
+  folders?: FolderConfig[]; // Folders in this workspace
 }
 
 export interface AppRegistry {
@@ -42,5 +43,12 @@ export interface Folder {
 
 export interface FolderRegistry {
   [folderId: string]: Folder;
+}
+
+export interface FolderConfig {
+  apps: string[];
+  activeAppId: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
 }
 

@@ -4,7 +4,7 @@ import { ToolbarSubmenu } from "./ToolbarSubmenu";
 import { ToolbarButtonConfig } from "../types/toolbar";
 import { useNestedSubmenuNavigation } from "../hooks/useSubmenuAnimation";
 import { LayoutOverlay, LayoutType, Zone } from "./LayoutOverlay";
-import { AppRegistry, WorkspaceConfig } from "../types";
+import { AppRegistry, WorkspaceConfig, FolderRegistry } from "../types";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
@@ -24,6 +24,7 @@ interface ToolbarProps {
   setOnDragStartCallback?: (callback: (() => void) | null) => void;
   appRegistry?: AppRegistry;
   onClearFocus?: () => void;
+  folderRegistry?: FolderRegistry;
 }
 
 export function Toolbar({ 
@@ -41,7 +42,8 @@ export function Toolbar({
   activeZone,
   setOnDragStartCallback,
   appRegistry,
-  onClearFocus
+  onClearFocus,
+  folderRegistry
 }: ToolbarProps) {
   const { navigationPath, currentSubmenu, navigateToSubmenu, navigateBack, getParentLabel } = useNestedSubmenuNavigation(300);
   const [arrangeSubmenu, setArrangeSubmenu] = useState<string | null>(null);
@@ -323,6 +325,14 @@ export function Toolbar({
       }
     });
 
+    // Convert folder registry to config format
+    const folderConfigs = folderRegistry ? Object.values(folderRegistry).map(folder => ({
+      apps: folder.apps,
+      activeAppId: folder.activeAppId,
+      position: folder.position,
+      size: folder.size,
+    })) : [];
+
     // Create workspace config
     const workspaceConfig: WorkspaceConfig = {
       apps: visibleApps.map(app => ({
@@ -331,7 +341,8 @@ export function Toolbar({
         size: app.size
       })),
       layoutType: activeLayoutType || undefined,
-      icon: selectedIcon
+      icon: selectedIcon,
+      folders: folderConfigs
     };
 
     // Save to localStorage for persistence
