@@ -247,7 +247,8 @@ export function Toolbar({
         {appArrangeButtons.map((button, i) => {
           const IconComponent = button.icon;
           const distance = (i + 1) * 3.5; // 3.5rem spacing for square buttons
-          const isVisible = focusedAppId && expandLevel !== "collapsed" && !arrangeSubmenu && !activeLayout;
+          // Only show when: focused app exists, toolbar expanded, no submenu active, not in layout mode, and not in any workspace submenu
+          const isVisible = focusedAppId && expandLevel !== "collapsed" && !arrangeSubmenu && !activeLayout && navigationPath.length === 0;
 
           return (
             <div
