@@ -65,17 +65,19 @@ export function Toolbar({
     }
   }, [expandLevel, navigationPath.length, onCloseLayout]);
 
-  // Set up drag start callback when in layout mode
+  // Set up drag start callback when in layout mode AND viewing the layouts submenu
   useEffect(() => {
-    if (activeLayoutType && setOnDragStartCallback) {
-      // When dragging starts, navigate back from layouts to create
+    const isInLayoutsSubmenu = currentSubmenu === "layouts" && navigationPath.length === 2;
+    
+    if (activeLayoutType && isInLayoutsSubmenu && setOnDragStartCallback) {
+      // When dragging starts while viewing layouts submenu, navigate back to create
       setOnDragStartCallback(() => () => {
         navigateBack();
       });
     } else if (setOnDragStartCallback) {
       setOnDragStartCallback(null);
     }
-  }, [activeLayoutType, setOnDragStartCallback, navigateBack]);
+  }, [activeLayoutType, currentSubmenu, navigationPath.length, setOnDragStartCallback, navigateBack]);
 
   const workspaceButtons: ToolbarButtonConfig[] = [
     { name: "Create", workspace: "create", icon: Plus, opensSubmenu: "create" },
