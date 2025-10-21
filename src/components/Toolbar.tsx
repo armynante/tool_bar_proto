@@ -249,9 +249,9 @@ export function Toolbar({
     // Get visible apps and their current positions/sizes
     const visibleApps = appRegistry ? Object.values(appRegistry).filter(app => app.isVisible) : [];
     
-    // Use existing workspace key if editing, otherwise create new one
-    const workspaceKey = editingWorkspaceKey || layoutName.toLowerCase().replace(/\s+/g, '-');
+    // Use existing workspace key if editing (don't change it even if name changes), otherwise create new one
     const isEditing = !!editingWorkspaceKey;
+    const workspaceKey = isEditing ? editingWorkspaceKey : layoutName.toLowerCase().replace(/\s+/g, '-');
     
     // Determine the icon component and emoji
     let iconComponent;
