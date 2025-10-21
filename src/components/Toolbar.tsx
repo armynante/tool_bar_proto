@@ -612,7 +612,7 @@ export function Toolbar({
           bottomPosition="bottom-16"
           expandLevel={expandLevel}
           onItemClick={handleCreateButtonClick}
-          isSaveInputVisible={isSaveInputVisible}
+          isSaveInputVisible={isSaveInputVisible && !isEditingArrangement}
         />
 
         {/* Layouts Submenu */}
@@ -626,12 +626,9 @@ export function Toolbar({
           onItemClick={handleLayoutsButtonClick}
         />
 
-        {/* Save Input Box - shown above create buttons when save is clicked or when editing */}
-        {isSaveInputVisible && ((currentSubmenu === "create" && !isEditingArrangement) || editingWorkspaceKey) && (
-          <div className={[
-            "right-8 bottom-32 z-[9999] absolute shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] p-5 rounded-xl outline outline-white/30 w-[600px] transition-all duration-300",
-            isEditingArrangement ? "bg-white/5 opacity-50 pointer-events-none" : "bg-white/10"
-          ].join(" ")}>
+        {/* Save Input Box - shown above create buttons when save is clicked or when editing (but not when editing arrangement) */}
+        {isSaveInputVisible && !isEditingArrangement && ((currentSubmenu === "create") || editingWorkspaceKey) && (
+          <div className="right-8 bottom-32 z-[9999] absolute bg-white/10 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] p-5 rounded-xl outline outline-white/30 w-[600px] transition-all duration-300">
             <div className="space-y-4">
               {/* Top Row - Layout Name Input */}
               <div>
