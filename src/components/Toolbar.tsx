@@ -1,4 +1,4 @@
-import { Plus, Home, MessageSquare, Box, X, Save, EyeOffIcon, Maximize2, Maximize, Columns2, Columns3, Grid2X2, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Grid, Eye, LayoutGrid, SplitSquareVertical, PanelLeftClose } from "lucide-react";
+import { Plus, Home, MessageSquare, Box, X, Save, EyeOffIcon, Maximize2, Maximize, Columns2, Columns3, Grid2X2, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Grid, Eye, LayoutGrid, SplitSquareVertical, PanelLeftClose, Loader } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ToolbarSubmenu } from "./ToolbarSubmenu";
 import { ToolbarButtonConfig } from "../types/toolbar";
@@ -53,6 +53,7 @@ export function Toolbar({
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const [editingWorkspaceKey, setEditingWorkspaceKey] = useState<string | null>(null);
   const [isEditingArrangement, setIsEditingArrangement] = useState(false);
+  const [loadingWorkspace, setLoadingWorkspace] = useState<string | null>(null);
   const [workspaceButtons, setWorkspaceButtons] = useState<ToolbarButtonConfig[]>(() => {
     // Load saved workspaces from localStorage
     const savedWorkspaces = localStorage.getItem('customWorkspaces');
@@ -195,7 +196,15 @@ export function Toolbar({
         setIsSaveInputVisible(true);
       }
     } else if (button.workspace) {
-      onWorkspaceClick(button.workspace);
+      // Show loading spinner
+      setLoadingWorkspace(button.workspace);
+      
+      // Delay the workspace loading by 3 seconds
+      const workspaceToLoad = button.workspace;
+      setTimeout(() => {
+        onWorkspaceClick(workspaceToLoad);
+        setLoadingWorkspace(null);
+      }, 3000);
     }
   };
 
@@ -618,6 +627,7 @@ export function Toolbar({
           bottomPosition="bottom-16"
           expandLevel={expandLevel}
           onItemClick={handleWorkspaceButtonClick}
+          loadingWorkspaceId={loadingWorkspace || undefined}
         />
 
         {/* Create Submenu */}

@@ -1,6 +1,6 @@
 import { ToolbarButtonConfig, SubmenuAnimationState } from '../types/toolbar';
 import { useState } from 'react';
-import { Edit, ArrowLeftRight, ArrowUpDown, Columns3, Columns, Minimize2, Maximize2, SquareStack, PanelLeft, PanelRight, PanelTop, PanelBottom } from 'lucide-react';
+import { Edit, ArrowLeftRight, ArrowUpDown, Columns3, Columns, Minimize2, Maximize2, SquareStack, PanelLeft, PanelRight, PanelTop, PanelBottom, Loader } from 'lucide-react';
 
 interface SplitOption {
   name: string;
@@ -38,6 +38,7 @@ interface ToolbarSubmenuProps {
   expandLevel: string;
   onItemClick?: (button: ToolbarButtonConfig) => void;
   isSaveInputVisible?: boolean;
+  loadingWorkspaceId?: string;
 }
 
 // Calculate transform distance based on button index
@@ -61,6 +62,7 @@ export function ToolbarSubmenu({
   expandLevel,
   onItemClick,
   isSaveInputVisible = false,
+  loadingWorkspaceId,
 }: ToolbarSubmenuProps) {
   const [hoveredButtonIndex, setHoveredButtonIndex] = useState<number | null>(null);
   const [splitsMenuOpen, setSplitsMenuOpen] = useState(false);
@@ -154,7 +156,9 @@ export function ToolbarSubmenu({
                 ].join(" ")}
                 role="button"
               >
-              {button.emoji ? (
+              {loadingWorkspaceId === button.workspace && submenuId === 'workspaces' ? (
+                <Loader className="text-white animate-spin" size={16} strokeWidth={2.5} />
+              ) : button.emoji ? (
                 <span className="text-base">{button.emoji}</span>
               ) : (
                 <IconComponent className="text-white" size={16} strokeWidth={2.5} />
