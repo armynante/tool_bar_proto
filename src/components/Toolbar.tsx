@@ -1,8 +1,9 @@
-import { Plus, Home, MessageSquare, Box, X, Save, EyeOffIcon, Maximize2, Maximize, Columns2, Columns3, Grid2X2, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Grid, Eye } from "lucide-react";
+import { Plus, Home, MessageSquare, Box, X, Save, EyeOffIcon, Maximize2, Maximize, Columns2, Columns3, Grid2X2, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Grid, Eye, LayoutGrid, SplitSquareVertical, PanelLeftClose } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ToolbarSubmenu } from "./ToolbarSubmenu";
 import { ToolbarButtonConfig } from "../types/toolbar";
 import { useNestedSubmenuNavigation } from "../hooks/useSubmenuAnimation";
+import { LayoutOverlay, LayoutType } from "./LayoutOverlay";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
@@ -14,6 +15,7 @@ interface ToolbarProps {
   onSettingsClick: () => void;
   onWorkspaceClick: (workspace: string) => void;
   onArrangeApp: (arrangement: string) => void;
+  onLayoutZoneClick?: (zone: string) => void;
 }
 
 export function Toolbar({ 
@@ -23,10 +25,12 @@ export function Toolbar({
   onWorkspacesClick,
   onSettingsClick,
   onWorkspaceClick,
-  onArrangeApp
+  onArrangeApp,
+  onLayoutZoneClick
 }: ToolbarProps) {
   const { navigationPath, currentSubmenu, navigateToSubmenu, navigateBack, getParentLabel } = useNestedSubmenuNavigation(300);
   const [arrangeSubmenu, setArrangeSubmenu] = useState<string | null>(null);
+  const [activeLayout, setActiveLayout] = useState<LayoutType>(null);
 
   // Reset submenu when expandLevel changes
   useEffect(() => {
@@ -43,6 +47,13 @@ export function Toolbar({
     }
   }, [focusedAppId, expandLevel]);
 
+  // Reset active layout when expandLevel changes
+  useEffect(() => {
+    if (expandLevel === "collapsed" || navigationPath.length === 0) {
+      setActiveLayout(null);
+    }
+  }, [expandLevel, navigationPath.length]);
+
   const workspaceButtons: ToolbarButtonConfig[] = [
     { name: "Create", workspace: "create", icon: Plus, opensSubmenu: "create" },
     { name: "Main", workspace: "main", icon: Home },
@@ -55,7 +66,7 @@ export function Toolbar({
     { name: "save", workspace: "create", icon: Save },
     { name: "hide all", workspace: "create", icon: EyeOffIcon },
     { name: "show all", workspace: "show-all", icon: Eye },
-    { name: "layouts", workspace: "layouts", icon: Grid },
+    { name: "layouts", workspace: "layouts", icon: Grid, opensSubmenu: "layouts" },
   ];
 
   // Main arrangement buttons for focused apps - appear at bottom when app is selected
@@ -92,6 +103,14 @@ export function Toolbar({
     { name: "right", workspace: "third-right", icon: ArrowRight, title: "Right Third" },
   ];
 
+  // Layouts submenu buttons
+  const layoutsButtons: ToolbarButtonConfig[] = [
+    { name: "cancel", icon: X, isCancel: true, title: "Back" },
+    { name: "quarters", workspace: "quarters", icon: LayoutGrid, title: "Quarters" },
+    { name: "splits", workspace: "splits", icon: SplitSquareVertical, title: "Thirds" },
+    { name: "2Q+1H", workspace: "two-quarters-left", icon: PanelLeftClose, title: "Two Quarters + Half" },
+  ];
+
 
   const handleWorkspaceButtonClick = (button: ToolbarButtonConfig) => {
     if (button.opensSubmenu) {
@@ -104,10 +123,21 @@ export function Toolbar({
   const handleCreateButtonClick = (button: ToolbarButtonConfig) => {
     if (button.isCancel) {
       navigateBack();
+      setActiveLayout(null);
     } else if (button.opensSubmenu) {
       navigateToSubmenu(button.opensSubmenu);
     } else if (button.workspace) {
       onWorkspaceClick(button.workspace);
+    }
+  };
+
+  const handleLayoutsButtonClick = (button: ToolbarButtonConfig) => {
+    if (button.isCancel) {
+      navigateBack();
+      setActiveLayout(null);
+    } else if (button.workspace) {
+      // Set the active layout to show the overlay
+      setActiveLayout(button.workspace as LayoutType);
     }
   };
 
@@ -132,6 +162,20 @@ export function Toolbar({
     if (currentSubmenu === "create" && navigationPath.length === 1) return "expanded";
     if (currentSubmenu === "create") return "collapsing";
     if (navigationPath.length === 0 || navigationPath[0] !== "create") return "collapsed";
+    return "collapsing";
+  };
+
+  const getLayoutsAnimationState = () => {
+    // Layouts is a submenu of "create", so path should be ['create', 'layouts']
+    if (currentSubmenu === "layouts" && navigationPath.length === 2 && navigationPath[1] === "layouts") {
+      return "expanded";
+    }
+    if (navigationPath.length === 2 && navigationPath[1] === "layouts") {
+      return "expanding";
+    }
+    if (navigationPath.length < 2 || navigationPath[1] !== "layouts") {
+      return "collapsed";
+    }
     return "collapsing";
   };
 
@@ -322,8 +366,29 @@ export function Toolbar({
           onItemClick={handleCreateButtonClick}
         />
 
+        {/* Layouts Submenu */}
+        <ToolbarSubmenu
+          submenuId="layouts"
+          buttons={layoutsButtons}
+          isActive={expandLevel === "workspaces" && currentSubmenu === "layouts"}
+          animationState={getLayoutsAnimationState()}
+          bottomPosition="bottom-16"
+          expandLevel={expandLevel}
+          onItemClick={handleLayoutsButtonClick}
+        />
 
       </div>
+
+      {/* Layout Overlay - shown when a layout is selected */}
+      <LayoutOverlay 
+        layoutType={activeLayout} 
+        onZoneClick={(zone) => {
+          if (onLayoutZoneClick) {
+            onLayoutZoneClick(zone);
+          }
+          // Keep overlay active after clicking a zone
+        }}
+      />
     </div>
   );
 }

@@ -153,6 +153,7 @@ interface UseNestedSubmenuNavigationReturn {
 const LABEL_MAP: { [key: string]: string } = {
   'create': 'Create',
   'arrange': 'Arrange',
+  'layouts': 'Layouts',
 };
 
 export function useNestedSubmenuNavigation(

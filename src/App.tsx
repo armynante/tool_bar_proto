@@ -474,6 +474,13 @@ export function App() {
     }));
   };
 
+  // Handler for layout zone clicks (from LayoutOverlay)
+  const handleLayoutZoneClick = (zone: string) => {
+    // When a zone is clicked, arrange the focused app to that zone
+    // Or if no app is focused, this could be used for other purposes
+    handleArrangeApp(zone);
+  };
+
   const handleLauncherClick = () => {
     setExpandLevel(expandLevel === "collapsed" ? "menu" : "collapsed");
   };
@@ -539,6 +546,7 @@ export function App() {
           onSettingsClick={handleSettingsClick}
           onWorkspaceClick={handleWorkspaceClick}
           onArrangeApp={handleArrangeApp}
+          onLayoutZoneClick={handleLayoutZoneClick}
         />
       </div>
     </div>
