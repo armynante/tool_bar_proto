@@ -85,7 +85,9 @@ export function ToolbarSubmenu({
 
   const handleEditClick = (e: React.MouseEvent, button: ToolbarButtonConfig) => {
     e.stopPropagation();
-    onItemClick?.({ ...button, workspace: 'edit', name: 'Edit' });
+    // Pass the original workspace key through a custom property
+    const editButton = { ...button, workspace: 'edit', originalWorkspace: button.workspace };
+    onItemClick?.(editButton as ToolbarButtonConfig);
   };
 
   return (
@@ -146,7 +148,7 @@ export function ToolbarSubmenu({
                   "flex flex-col justify-center items-center bg-white/10 hover:bg-white/20 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] rounded-xl outline outline-white/30 w-12 h-12 transition-all duration-300 cursor-pointer",
                   (isSplitsButton && splitsMenuOpen) || (isQuartersButton && quartersMenuOpen) || (isTwoQuartersButton && twoQuartersMenuOpen) 
                     ? "opacity-50" 
-                    : (isSaveInputVisible && submenuId === "create" && button.name !== "save" && !button.isCancel)
+                    : (isSaveInputVisible && submenuId === "create")
                       ? "opacity-50"
                       : "opacity-100"
                 ].join(" ")}

@@ -174,12 +174,12 @@ export function Toolbar({
   ];
 
 
-  const handleWorkspaceButtonClick = (button: ToolbarButtonConfig) => {
+  const handleWorkspaceButtonClick = (button: ToolbarButtonConfig & { originalWorkspace?: string }) => {
     if (button.opensSubmenu) {
       navigateToSubmenu(button.opensSubmenu);
-    } else if (button.workspace === 'edit') {
+    } else if (button.workspace === 'edit' && button.originalWorkspace) {
       // Handle edit mode - load workspace data into save prompt
-      const workspaceToEdit = workspaceButtons.find(wb => wb.name === button.name);
+      const workspaceToEdit = workspaceButtons.find(wb => wb.workspace === button.originalWorkspace);
       if (workspaceToEdit && workspaceToEdit.workspace) {
         setEditingWorkspaceKey(workspaceToEdit.workspace);
         setLayoutName(workspaceToEdit.name);
@@ -249,12 +249,13 @@ export function Toolbar({
     // Get visible apps and their current positions/sizes
     const visibleApps = appRegistry ? Object.values(appRegistry).filter(app => app.isVisible) : [];
     
-    // Create workspace key from layout name (lowercase, no spaces)
-    const workspaceKey = layoutName.toLowerCase().replace(/\s+/g, '-');
+    // Use existing workspace key if editing, otherwise create new one
+    const workspaceKey = editingWorkspaceKey || layoutName.toLowerCase().replace(/\s+/g, '-');
+    const isEditing = !!editingWorkspaceKey;
     
     // Determine the icon component and emoji
     let iconComponent;
-    let emojiIcon;
+    let emojiIcon: string | undefined;
     
     if (selectedIcon.startsWith('lucide:')) {
       // Extract Lucide icon name and map to component
@@ -274,8 +275,8 @@ export function Toolbar({
       iconComponent = Box;
     }
 
-    // Add new workspace button (insert after "Create" button which is at index 0)
-    const newButton: ToolbarButtonConfig = {
+    // Update or create workspace button
+    const updatedButton: ToolbarButtonConfig = {
       name: layoutName,
       workspace: workspaceKey,
       icon: iconComponent,
@@ -284,10 +285,17 @@ export function Toolbar({
     };
     
     setWorkspaceButtons(prev => {
-      // Insert after Create button (index 0)
-      const newButtons = [...prev];
-      newButtons.splice(1, 0, newButton);
-      return newButtons;
+      if (isEditing) {
+        // Update existing button
+        return prev.map(btn => 
+          btn.workspace === workspaceKey ? updatedButton : btn
+        );
+      } else {
+        // Insert after Create button (index 0)
+        const newButtons = [...prev];
+        newButtons.splice(1, 0, updatedButton);
+        return newButtons;
+      }
     });
 
     // Create workspace config
@@ -311,32 +319,54 @@ export function Toolbar({
 
       // Save workspace button metadata
       const existingWorkspaces = localStorage.getItem('customWorkspaces');
-      const workspaces = existingWorkspaces ? JSON.parse(existingWorkspaces) : [];
-      workspaces.push({
-        key: workspaceKey,
-        name: layoutName,
-        emoji: emojiIcon,
-        iconName: emojiIcon ? undefined : selectedIcon.replace('lucide:', '')
-      });
+      let workspaces = existingWorkspaces ? JSON.parse(existingWorkspaces) : [];
+      
+      if (isEditing) {
+        // Update existing workspace metadata
+        workspaces = workspaces.map((ws: any) => 
+          ws.key === workspaceKey 
+            ? {
+                key: workspaceKey,
+                name: layoutName,
+                emoji: emojiIcon,
+                iconName: emojiIcon ? undefined : selectedIcon.replace('lucide:', '')
+              }
+            : ws
+        );
+      } else {
+        // Add new workspace metadata
+        workspaces.push({
+          key: workspaceKey,
+          name: layoutName,
+          emoji: emojiIcon,
+          iconName: emojiIcon ? undefined : selectedIcon.replace('lucide:', '')
+        });
+      }
+      
       localStorage.setItem('customWorkspaces', JSON.stringify(workspaces));
 
-      console.log("Saved workspace:", workspaceKey, workspaceConfig);
+      console.log(isEditing ? "Updated workspace:" : "Saved workspace:", workspaceKey, workspaceConfig);
     } catch (e) {
       console.error('Failed to save workspace:', e);
     }
 
-    // Trigger workspace click to load the saved layout
-    onWorkspaceClick(workspaceKey);
+    // Trigger workspace click to load the saved layout (only for new workspaces)
+    if (!isEditing) {
+      onWorkspaceClick(workspaceKey);
+    }
 
     // Reset state
     setIsSaveInputVisible(false);
     setLayoutName("");
     setSelectedIcon(null);
+    setEditingWorkspaceKey(null);
     setActiveLayoutType(null);
     onCloseLayout?.();
     
-    // Navigate back to workspaces
-    navigateBack();
+    // Navigate back to workspaces if creating new
+    if (!isEditing) {
+      navigateBack();
+    }
   };
 
   const handleAppArrangeButtonClick = (button: ToolbarButtonConfig) => {
@@ -577,8 +607,8 @@ export function Toolbar({
           onItemClick={handleLayoutsButtonClick}
         />
 
-        {/* Save Input Box - shown above create buttons when save is clicked */}
-        {isSaveInputVisible && currentSubmenu === "create" && (
+        {/* Save Input Box - shown above create buttons when save is clicked or when editing */}
+        {isSaveInputVisible && (currentSubmenu === "create" || editingWorkspaceKey) && (
           <div className="right-8 bottom-32 z-[9999] absolute bg-white/10 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] backdrop-blur-[27px] p-5 rounded-xl outline outline-white/30 w-[600px] transition-all duration-300">
             <div className="space-y-4">
               {/* Top Row - Layout Name Input */}
@@ -655,6 +685,24 @@ export function Toolbar({
                     <div className="text-white/60 text-sm">No visible apps</div>
                   )}
                 </div>
+              </div>
+
+              {/* Action Buttons Row */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleCancelSave}
+                  className="flex flex-1 justify-center items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg font-bold text-white text-sm transition-all duration-200"
+                >
+                  <X size={16} strokeWidth={2.5} />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveLayout}
+                  className="flex flex-1 justify-center items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg font-bold text-white text-sm transition-all duration-200"
+                >
+                  <Save size={16} strokeWidth={2.5} />
+                  {editingWorkspaceKey ? 'Update' : 'Save'}
+                </button>
               </div>
             </div>
           </div>
