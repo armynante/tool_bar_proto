@@ -137,7 +137,8 @@ function DraggableWindow({
     <div
       ref={windowRef}
       className={[
-        "absolute bg-white/10 shadow-2xl backdrop-blur-xl rounded-lg overflow-hidden transition-all",
+        "absolute bg-white/10 shadow-2xl backdrop-blur-xl rounded-lg overflow-hidden",
+        !isDragging && !isResizing ? "transition-all" : "",
         isFocused ? "border-4 border-blue-400 ring-4 ring-blue-300/50" : "border border-white/20"
       ].join(" ")}
       style={{

@@ -11,6 +11,7 @@ export interface ToolbarButtonConfig {
   isCancel?: boolean;
   opensSubmenu?: string; // ID of submenu this button opens
   onClick?: () => void;
+  title?: string; // Tooltip text for the button
 }
 
 export interface SubmenuConfig {
