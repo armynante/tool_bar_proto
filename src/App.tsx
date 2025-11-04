@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import "./index.css";
 import desktopBg from "./assets/desktop-bg.png";
-import { AppState, Folder, FolderRegistry } from "./types";
+import { AppState, Folder, FolderRegistry, WindowsPreviewZone } from "./types";
 import { debouncedSaveAppRegistry, loadAppRegistry, saveAppRegistry, flushPendingSave } from "./utils/storage";
 import { initializeRegistry, mergeNewAppsIntoRegistry, WORKSPACE_CONFIGS } from "./config/workspaces";
+import { calculateZoneGeometry } from "./utils/zoneCalculations";
 import { Dock } from "./components/Dock";
 import { Toolbar } from "./components/Toolbar";
 import { Zone } from "./components/LayoutOverlay";
 import { FolderWindow } from "./components/FolderWindow";
+import { WindowsSnapPreview } from "./components/WindowsSnapPreview";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
@@ -32,6 +34,9 @@ interface WindowProps {
   onDragOverZone?: (zoneId: string | null) => void;
   onSnapToZone?: (appId: string, zoneId: string) => void;
   onDragStart?: () => void;
+  windowsPreviewZones?: WindowsPreviewZone[];
+  onDragOverPreviewZone?: (zoneId: string | null) => void;
+  activeWindowsPreviewZone?: string | null;
 }
 
 function DraggableWindow({
@@ -54,7 +59,10 @@ function DraggableWindow({
   onFocus,
   onDragOverZone,
   onSnapToZone,
-  onDragStart
+  onDragStart,
+  windowsPreviewZones = [],
+  onDragOverPreviewZone,
+  activeWindowsPreviewZone = null
 }: WindowProps) {
   const [position, setPosition] = useState({ x: initialX, y: initialY });
   const [size, setSize] = useState({ width: initialWidth, height: initialHeight });
@@ -64,6 +72,7 @@ function DraggableWindow({
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const windowRef = useRef<HTMLDivElement>(null);
   const currentZoneRef = useRef<string | null>(null);
+  const currentPreviewZoneRef = useRef<string | null>(null);
   const hasNotifiedDragStartRef = useRef(false);
 
   // Use refs to capture latest position/size values for the mouseUp handler
@@ -85,13 +94,28 @@ function DraggableWindow({
     setSize({ width: initialWidth, height: initialHeight });
   }, [initialX, initialY, initialWidth, initialHeight]);
 
+  useEffect(() => {
+    if (!activeWindowsPreviewZone) {
+      currentPreviewZoneRef.current = null;
+    } else {
+      currentPreviewZoneRef.current = activeWindowsPreviewZone;
+    }
+  }, [activeWindowsPreviewZone]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.resize-handle')) return;
+    console.log('🖱️ [DraggableWindow] Mouse down on window:', id);
+    if ((e.target as HTMLElement).closest('.resize-handle')) {
+      console.log('🖱️ [DraggableWindow] Clicked resize handle, not dragging');
+      return;
+    }
+    console.log('🖱️ [DraggableWindow] Starting drag');
     setIsDragging(true);
     setDragStart({
       x: e.clientX - position.x,
       y: e.clientY - position.y,
     });
+    currentPreviewZoneRef.current = null;
+    onDragOverPreviewZone?.(null);
   };
 
   const handleResizeMouseDown = (e: React.MouseEvent) => {
@@ -118,13 +142,17 @@ function DraggableWindow({
         const newX = e.clientX - dragStart.x;
         const newY = e.clientY - dragStart.y;
         setPosition({ x: newX, y: newY });
+        const centerX = newX + size.width / 2;
+        const centerY = newY + size.height / 2;
+        
+        // For Windows preview zones, use MOUSE POSITION instead of window center
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
+        
+        console.log('🔄 [DraggableWindow] Dragging at:', { centerX, centerY, mouseX, mouseY }, 'Preview zones count:', windowsPreviewZones?.length);
         
         // Check for zone intersection when in layout mode
         if (isLayoutMode && layoutZones.length > 0) {
-          // Calculate window center point
-          const centerX = newX + size.width / 2;
-          const centerY = newY + size.height / 2;
-          
           // Find which zone (if any) contains the center point
           let foundZone: string | null = null;
           for (const zone of layoutZones) {
@@ -145,6 +173,37 @@ function DraggableWindow({
             onDragOverZone?.(foundZone);
           }
         }
+
+        if (windowsPreviewZones && windowsPreviewZones.length > 0) {
+          console.log('[DraggableWindow] Checking preview zones, count:', windowsPreviewZones.length);
+          console.log('[DraggableWindow] Mouse position:', { mouseX, mouseY });
+          let foundPreviewZone: string | null = null;
+          for (const previewZone of windowsPreviewZones) {
+            const { left, right, top, bottom } = previewZone.rect;
+            console.log('[DraggableWindow] Checking zone:', previewZone.target, previewZone.rect);
+            // Check if MOUSE CURSOR is over the zone preview box (not window center)
+            if (
+              mouseX >= left &&
+              mouseX <= right &&
+              mouseY >= top &&
+              mouseY <= bottom
+            ) {
+              foundPreviewZone = previewZone.target;
+              console.log('[DraggableWindow] ✓ Found zone:', foundPreviewZone);
+              break;
+            }
+          }
+
+          if (foundPreviewZone !== currentPreviewZoneRef.current) {
+            console.log('[DraggableWindow] Zone changed:', currentPreviewZoneRef.current, '->', foundPreviewZone);
+            currentPreviewZoneRef.current = foundPreviewZone;
+            onDragOverPreviewZone?.(foundPreviewZone);
+          }
+        } else if (currentPreviewZoneRef.current) {
+          console.log('[DraggableWindow] No preview zones, clearing current zone');
+          currentPreviewZoneRef.current = null;
+          onDragOverPreviewZone?.(null);
+        }
       } else if (isResizing) {
         const newWidth = Math.max(200, resizeStart.width + (e.clientX - resizeStart.x));
         const newHeight = Math.max(150, resizeStart.height + (e.clientY - resizeStart.y));
@@ -153,19 +212,37 @@ function DraggableWindow({
     };
 
     const handleMouseUp = () => {
+      console.log('[DraggableWindow] Mouse up, isDragging:', isDragging);
       // Reset drag start notification flag
       if (isDragging) {
         hasNotifiedDragStartRef.current = false;
       }
       
+      // Handle snap to zone when using windows preview
+      const previewZoneToSnap = currentPreviewZoneRef.current || activeWindowsPreviewZone;
+      console.log('[DraggableWindow] Preview zone to snap:', previewZoneToSnap);
+      console.log('[DraggableWindow] Active preview zone:', activeWindowsPreviewZone);
+      console.log('[DraggableWindow] Current preview zone ref:', currentPreviewZoneRef.current);
+
+      if (isDragging && previewZoneToSnap && onSnapToZone) {
+        console.log('[DraggableWindow] ✓ Snapping to preview zone:', previewZoneToSnap);
+        onSnapToZone(id, previewZoneToSnap);
+        currentPreviewZoneRef.current = null;
+        onDragOverPreviewZone?.(null);
+        onDragOverZone?.(null);
       // Handle snap to zone when in layout mode
-      if (isDragging && isLayoutMode && currentZoneRef.current && onSnapToZone) {
+      } else if (isDragging && isLayoutMode && currentZoneRef.current && onSnapToZone) {
+        console.log('[DraggableWindow] ✓ Snapping to layout zone:', currentZoneRef.current);
         onSnapToZone(id, currentZoneRef.current);
         currentZoneRef.current = null;
         onDragOverZone?.(null);
+        onDragOverPreviewZone?.(null);
       } else if (isDragging) {
+        console.log('[DraggableWindow] No snap, just updating position');
         // Save position/size changes when drag/resize finishes using refs
         onUpdate(id, { position: positionRef.current });
+        currentPreviewZoneRef.current = null;
+        onDragOverPreviewZone?.(null);
       } else if (isResizing) {
         onUpdate(id, { size: sizeRef.current });
       }
@@ -183,7 +260,7 @@ function DraggableWindow({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, dragStart, resizeStart, id, onUpdate, isLayoutMode, layoutZones, size.width, size.height, onDragOverZone, onSnapToZone, onDragStart]);
+  }, [isDragging, isResizing, dragStart, resizeStart, id, onUpdate, isLayoutMode, layoutZones, size.width, size.height, onDragOverZone, onSnapToZone, onDragStart, windowsPreviewZones, onDragOverPreviewZone]);
 
   // Return null if window is not visible - AFTER all hooks
   if (!isVisible) {
@@ -261,6 +338,14 @@ export function App() {
   const [focusedAppId, setFocusedAppId] = useState<string | null>(null);
   const [activeLayoutZone, setActiveLayoutZone] = useState<string | null>(null);
   const [layoutZones, setLayoutZones] = useState<Zone[]>([]);
+  const [isWindowsPreviewOpen, setIsWindowsPreviewOpen] = useState(false);
+  const [windowsPreviewZones, setWindowsPreviewZones] = useState<WindowsPreviewZone[]>([]);
+  const [activeWindowsPreviewZone, setActiveWindowsPreviewZone] = useState<string | null>(null);
+
+  // Log when activeWindowsPreviewZone changes
+  useEffect(() => {
+    console.log('🎯 [App] activeWindowsPreviewZone changed to:', activeWindowsPreviewZone);
+  }, [activeWindowsPreviewZone]);
   const [onDragStartCallback, setOnDragStartCallback] = useState<(() => void) | null>(null);
   const [folderRegistry, setFolderRegistry] = useState<FolderRegistry>({});
   const [appRegistry, setAppRegistry] = useState(() => {
@@ -271,6 +356,32 @@ export function App() {
     }
     return initializeRegistry();
   });
+
+  const zonesEqual = (a: WindowsPreviewZone[], b: WindowsPreviewZone[]) => {
+    if (a === b) return true;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i += 1) {
+      const zoneA = a[i];
+      const zoneB = b[i];
+      if (!zoneB) return false;
+      if (zoneA.id !== zoneB.id || zoneA.target !== zoneB.target) {
+        return false;
+      }
+      const rectA = zoneA.rect;
+      const rectB = zoneB.rect;
+      if (
+        rectA.top !== rectB.top ||
+        rectA.left !== rectB.left ||
+        rectA.right !== rectB.right ||
+        rectA.bottom !== rectB.bottom ||
+        rectA.width !== rectB.width ||
+        rectA.height !== rectB.height
+      ) {
+        return false;
+      }
+    }
+    return true;
+  };
 
   // Save to localStorage whenever app registry changes (debounced)
   useEffect(() => {
@@ -602,8 +713,34 @@ export function App() {
     handleArrangeApp(zone);
   };
 
+  const handleWindowsPreviewToggle = (open: boolean) => {
+    console.log('🔧 [App] Windows preview toggle:', open);
+    setIsWindowsPreviewOpen(open);
+    if (!open) {
+      setWindowsPreviewZones([]);
+      setActiveWindowsPreviewZone(null);
+    }
+  };
+
+  const handleWindowsPreviewZonesChange = (zones: WindowsPreviewZone[]) => {
+    console.log('[App] Windows preview zones changed, count:', zones.length);
+    zones.forEach(zone => {
+      console.log('[App] Zone:', zone.target, zone.rect);
+    });
+    setWindowsPreviewZones(prev => {
+      if (zonesEqual(prev, zones)) {
+        return prev;
+      }
+      return zones;
+    });
+    if (zones.length === 0) {
+      setActiveWindowsPreviewZone(null);
+    }
+  };
+
   // Handler for snapping app to zone during drag
   const handleSnapToZone = (appIdOrFolderId: string, zoneId: string) => {
+    console.log('[App] handleSnapToZone called:', { appIdOrFolderId, zoneId });
     const isFolder = appIdOrFolderId.startsWith('folder-');
     
     // Temporarily set focused app for the arrangement
@@ -612,101 +749,20 @@ export function App() {
       setFocusedAppId(appIdOrFolderId);
     }
     
-    // Calculate zone position and size
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    const padding = 50;
-
-    let newPosition = { x: 0, y: 0 };
-    let newSize = { width: 800, height: 600 };
-
-    switch (zoneId) {
-      case "half-left":
-        newSize = {
-          width: screenWidth / 2 - padding * 1.5,
-          height: screenHeight - padding * 2,
-        };
-        newPosition = { x: padding, y: padding };
-        break;
-      case "half-right":
-        newSize = {
-          width: screenWidth / 2 - padding * 1.5,
-          height: screenHeight - padding * 2,
-        };
-        newPosition = {
-          x: screenWidth / 2 + padding / 2,
-          y: padding,
-        };
-        break;
-      case "quarter-tl":
-        newSize = {
-          width: screenWidth / 2 - padding * 1.5,
-          height: screenHeight / 2 - padding * 1.5,
-        };
-        newPosition = { x: padding, y: padding };
-        break;
-      case "quarter-tr":
-        newSize = {
-          width: screenWidth / 2 - padding * 1.5,
-          height: screenHeight / 2 - padding * 1.5,
-        };
-        newPosition = {
-          x: screenWidth / 2 + padding / 2,
-          y: padding,
-        };
-        break;
-      case "quarter-bl":
-        newSize = {
-          width: screenWidth / 2 - padding * 1.5,
-          height: screenHeight / 2 - padding * 1.5,
-        };
-        newPosition = {
-          x: padding,
-          y: screenHeight / 2 + padding / 2,
-        };
-        break;
-      case "quarter-br":
-        newSize = {
-          width: screenWidth / 2 - padding * 1.5,
-          height: screenHeight / 2 - padding * 1.5,
-        };
-        newPosition = {
-          x: screenWidth / 2 + padding / 2,
-          y: screenHeight / 2 + padding / 2,
-        };
-        break;
-      case "third-left":
-        newSize = {
-          width: screenWidth / 3 - padding,
-          height: screenHeight - padding * 2,
-        };
-        newPosition = { x: padding, y: padding };
-        break;
-      case "third-center":
-        newSize = {
-          width: screenWidth / 3 - padding,
-          height: screenHeight - padding * 2,
-        };
-        newPosition = {
-          x: screenWidth / 3 + padding / 2,
-          y: padding,
-        };
-        break;
-      case "third-right":
-        newSize = {
-          width: screenWidth / 3 - padding,
-          height: screenHeight - padding * 2,
-        };
-        newPosition = {
-          x: (screenWidth / 3) * 2 + padding / 2,
-          y: padding,
-        };
-        break;
-      default:
-        // Restore previous focused app if zone not recognized
-        setFocusedAppId(previousFocused);
-        return;
+    // Calculate zone position and size using shared utility
+    const geometry = calculateZoneGeometry(zoneId);
+    console.log('[App] Calculated geometry:', geometry);
+    
+    if (!geometry) {
+      console.log('[App] ✗ No geometry found for zone:', zoneId);
+      // Restore previous focused app if zone not recognized
+      setFocusedAppId(previousFocused);
+      return;
     }
+    
+    const newPosition = geometry.position;
+    const newSize = geometry.size;
+    console.log('[App] New position/size:', { newPosition, newSize });
 
     // Check for collision with existing apps or folders in the same zone
     const existingAppInZone = Object.values(appRegistry).find(app => 
@@ -795,6 +851,12 @@ export function App() {
     
     // Restore previous focused app
     setFocusedAppId(previousFocused);
+    setActiveWindowsPreviewZone(null);
+    
+    // Auto-close Windows Layouts panel if snap was from preview
+    if (isWindowsPreviewOpen) {
+      handleWindowsPreviewToggle(false);
+    }
   };
 
   const handleLauncherClick = () => {
@@ -921,30 +983,44 @@ export function App() {
               // Notify callback when drag starts
               onDragStartCallback?.();
             }}
+            windowsPreviewZones={isWindowsPreviewOpen ? windowsPreviewZones : []}
+            onDragOverPreviewZone={setActiveWindowsPreviewZone}
+            activeWindowsPreviewZone={isWindowsPreviewOpen ? activeWindowsPreviewZone : null}
           />
         ))}
 
         {/* Render folders */}
-        {Object.values(folderRegistry).map(folder => (
-          <FolderWindow
-            key={folder.id}
-            folder={folder}
-            appRegistry={appRegistry}
-            isFocused={focusedAppId === folder.id}
-            isLayoutMode={layoutZones.length > 0}
-            layoutZones={layoutZones}
-            onQuit={handleFolderQuit}
-            onMinimize={handleFolderMinimize}
-            onUpdate={handleFolderUpdate}
-            onFocus={handleFolderFocus}
-            onDragOverZone={setActiveLayoutZone}
-            onSnapToZone={handleSnapToZone}
-            onDragStart={() => {
-              onDragStartCallback?.();
-            }}
-            onTabSwitch={handleTabSwitch}
-          />
-        ))}
+        {Object.values(folderRegistry).map(folder => {
+          console.log('📁 [App] Rendering folder:', folder.id, 'isWindowsPreviewOpen:', isWindowsPreviewOpen, 'zones:', windowsPreviewZones.length);
+          return (
+            <FolderWindow
+              key={folder.id}
+              folder={folder}
+              appRegistry={appRegistry}
+              isFocused={focusedAppId === folder.id}
+              isLayoutMode={layoutZones.length > 0}
+              layoutZones={layoutZones}
+              onQuit={handleFolderQuit}
+              onMinimize={handleFolderMinimize}
+              onUpdate={handleFolderUpdate}
+              onFocus={handleFolderFocus}
+              onDragOverZone={setActiveLayoutZone}
+              onSnapToZone={handleSnapToZone}
+              onDragStart={() => {
+                onDragStartCallback?.();
+              }}
+              onTabSwitch={handleTabSwitch}
+              windowsPreviewZones={isWindowsPreviewOpen ? windowsPreviewZones : []}
+              onDragOverPreviewZone={setActiveWindowsPreviewZone}
+              activeWindowsPreviewZone={isWindowsPreviewOpen ? activeWindowsPreviewZone : null}
+            />
+          );
+        })}
+
+        {/* Windows Snap Preview Overlay */}
+        {isWindowsPreviewOpen && (
+          <WindowsSnapPreview activeZone={activeWindowsPreviewZone} />
+        )}
         
         {/* macOS-style Dock */}
         <Dock 
@@ -970,6 +1046,10 @@ export function App() {
           appRegistry={appRegistry}
           onClearFocus={() => setFocusedAppId(null)}
           folderRegistry={folderRegistry}
+          isWindowsPreviewOpen={isWindowsPreviewOpen}
+          onToggleWindowsPreview={handleWindowsPreviewToggle}
+          onWindowsPreviewZonesChange={handleWindowsPreviewZonesChange}
+          activeWindowsPreviewZone={activeWindowsPreviewZone}
         />
       </div>
     </div>

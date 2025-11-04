@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { AppState, Folder } from "../types";
+import { AppState, Folder, WindowsPreviewZone } from "../types";
 
 interface FolderWindowProps {
   folder: Folder;
@@ -15,6 +15,9 @@ interface FolderWindowProps {
   onSnapToZone?: (folderId: string, zoneId: string) => void;
   onDragStart?: () => void;
   onTabSwitch: (folderId: string, appId: string) => void;
+  windowsPreviewZones?: WindowsPreviewZone[];
+  onDragOverPreviewZone?: (zoneId: string | null) => void;
+  activeWindowsPreviewZone?: string | null;
 }
 
 export function FolderWindow({
@@ -30,7 +33,10 @@ export function FolderWindow({
   onDragOverZone,
   onSnapToZone,
   onDragStart,
-  onTabSwitch
+  onTabSwitch,
+  windowsPreviewZones,
+  onDragOverPreviewZone,
+  activeWindowsPreviewZone = null
 }: FolderWindowProps) {
   const [position, setPosition] = useState(folder.position);
   const [size, setSize] = useState(folder.size);
@@ -40,6 +46,7 @@ export function FolderWindow({
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const windowRef = useRef<HTMLDivElement>(null);
   const currentZoneRef = useRef<string | null>(null);
+  const currentPreviewZoneRef = useRef<string | null>(null);
   const hasNotifiedDragStartRef = useRef(false);
 
   const positionRef = useRef(position);
@@ -58,14 +65,32 @@ export function FolderWindow({
     setSize(folder.size);
   }, [folder.position, folder.size]);
 
+  useEffect(() => {
+    if (!activeWindowsPreviewZone) {
+      currentPreviewZoneRef.current = null;
+    } else {
+      currentPreviewZoneRef.current = activeWindowsPreviewZone;
+    }
+  }, [activeWindowsPreviewZone]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.resize-handle')) return;
-    if ((e.target as HTMLElement).closest('.tab-bar')) return;
+    console.log('🖱️ [FolderWindow] Mouse down on folder:', folder.id);
+    if ((e.target as HTMLElement).closest('.resize-handle')) {
+      console.log('🖱️ [FolderWindow] Clicked resize handle, not dragging');
+      return;
+    }
+    if ((e.target as HTMLElement).closest('.tab-bar')) {
+      console.log('🖱️ [FolderWindow] Clicked tab bar, not dragging');
+      return;
+    }
+    console.log('🖱️ [FolderWindow] Starting drag');
     setIsDragging(true);
     setDragStart({
       x: e.clientX - position.x,
       y: e.clientY - position.y,
     });
+    currentPreviewZoneRef.current = null;
+    onDragOverPreviewZone?.(null);
   };
 
   const handleResizeMouseDown = (e: React.MouseEvent) => {
@@ -90,11 +115,16 @@ export function FolderWindow({
         const newX = e.clientX - dragStart.x;
         const newY = e.clientY - dragStart.y;
         setPosition({ x: newX, y: newY });
+        const centerX = newX + size.width / 2;
+        const centerY = newY + size.height / 2;
+        
+        // For Windows preview zones, use MOUSE POSITION instead of window center
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
+        
+        console.log('🔄 [FolderWindow] Dragging at:', { centerX, centerY, mouseX, mouseY }, 'Preview zones count:', windowsPreviewZones?.length);
         
         if (isLayoutMode && layoutZones.length > 0) {
-          const centerX = newX + size.width / 2;
-          const centerY = newY + size.height / 2;
-          
           let foundZone: string | null = null;
           for (const zone of layoutZones) {
             if (
@@ -113,6 +143,37 @@ export function FolderWindow({
             onDragOverZone?.(foundZone);
           }
         }
+
+        if (windowsPreviewZones && windowsPreviewZones.length > 0) {
+          console.log('[FolderWindow] Checking preview zones, count:', windowsPreviewZones.length);
+          console.log('[FolderWindow] Mouse position:', { mouseX, mouseY });
+          let foundPreviewZone: string | null = null;
+          for (const previewZone of windowsPreviewZones) {
+            const { left, right, top, bottom } = previewZone.rect;
+            console.log('[FolderWindow] Checking zone:', previewZone.target, previewZone.rect);
+            // Check if MOUSE CURSOR is over the zone preview box (not window center)
+            if (
+              mouseX >= left &&
+              mouseX <= right &&
+              mouseY >= top &&
+              mouseY <= bottom
+            ) {
+              foundPreviewZone = previewZone.target;
+              console.log('[FolderWindow] ✓ Found zone:', foundPreviewZone);
+              break;
+            }
+          }
+
+          if (foundPreviewZone !== currentPreviewZoneRef.current) {
+            console.log('[FolderWindow] Zone changed:', currentPreviewZoneRef.current, '->', foundPreviewZone);
+            currentPreviewZoneRef.current = foundPreviewZone;
+            onDragOverPreviewZone?.(foundPreviewZone);
+          }
+        } else if (currentPreviewZoneRef.current) {
+          console.log('[FolderWindow] No preview zones, clearing current zone');
+          currentPreviewZoneRef.current = null;
+          onDragOverPreviewZone?.(null);
+        }
       } else if (isResizing) {
         const newWidth = Math.max(200, resizeStart.width + (e.clientX - resizeStart.x));
         const newHeight = Math.max(150, resizeStart.height + (e.clientY - resizeStart.y));
@@ -121,16 +182,33 @@ export function FolderWindow({
     };
 
     const handleMouseUp = () => {
+      console.log('[FolderWindow] Mouse up, isDragging:', isDragging);
       if (isDragging) {
         hasNotifiedDragStartRef.current = false;
       }
       
-      if (isDragging && isLayoutMode && currentZoneRef.current && onSnapToZone) {
+      const previewZoneToSnap = currentPreviewZoneRef.current || activeWindowsPreviewZone;
+      console.log('[FolderWindow] Preview zone to snap:', previewZoneToSnap);
+      console.log('[FolderWindow] Active preview zone:', activeWindowsPreviewZone);
+      console.log('[FolderWindow] Current preview zone ref:', currentPreviewZoneRef.current);
+
+      if (isDragging && previewZoneToSnap && onSnapToZone) {
+        console.log('[FolderWindow] ✓ Snapping to preview zone:', previewZoneToSnap);
+        onSnapToZone(folder.id, previewZoneToSnap);
+        currentPreviewZoneRef.current = null;
+        onDragOverPreviewZone?.(null);
+        onDragOverZone?.(null);
+      } else if (isDragging && isLayoutMode && currentZoneRef.current && onSnapToZone) {
+        console.log('[FolderWindow] ✓ Snapping to layout zone:', currentZoneRef.current);
         onSnapToZone(folder.id, currentZoneRef.current);
         currentZoneRef.current = null;
         onDragOverZone?.(null);
+        onDragOverPreviewZone?.(null);
       } else if (isDragging) {
+        console.log('[FolderWindow] No snap, just updating position');
         onUpdate(folder.id, { position: positionRef.current });
+        currentPreviewZoneRef.current = null;
+        onDragOverPreviewZone?.(null);
       } else if (isResizing) {
         onUpdate(folder.id, { size: sizeRef.current });
       }
@@ -148,7 +226,7 @@ export function FolderWindow({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, dragStart, resizeStart, folder.id, onUpdate, isLayoutMode, layoutZones, size.width, size.height, onDragOverZone, onSnapToZone, onDragStart]);
+  }, [isDragging, isResizing, dragStart, resizeStart, folder.id, onUpdate, isLayoutMode, layoutZones, size.width, size.height, onDragOverZone, onSnapToZone, onDragStart, windowsPreviewZones, onDragOverPreviewZone]);
 
   const activeApp = appRegistry[folder.activeAppId];
   if (!activeApp) return null;
