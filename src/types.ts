@@ -52,3 +52,16 @@ export interface FolderConfig {
   size: { width: number; height: number };
 }
 
+export interface WindowsPreviewZone {
+  id: string;
+  target: string;
+  rect: {
+    top: number;
+    left: number;
+    right: number;
+    bottom: number;
+    width: number;
+    height: number;
+  };
+}
+

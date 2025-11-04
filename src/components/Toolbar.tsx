@@ -4,7 +4,8 @@ import { ToolbarSubmenu } from "./ToolbarSubmenu";
 import { ToolbarButtonConfig } from "../types/toolbar";
 import { useNestedSubmenuNavigation } from "../hooks/useSubmenuAnimation";
 import { LayoutOverlay, LayoutType, Zone } from "./LayoutOverlay";
-import { AppRegistry, WorkspaceConfig, FolderRegistry } from "../types";
+import { AppRegistry, WorkspaceConfig, FolderRegistry, WindowsPreviewZone } from "../types";
+import { WindowsLayoutSection } from "./WindowsLayoutSection";
 
 type ExpandLevel = "collapsed" | "menu" | "workspaces" | "settings";
 
@@ -25,6 +26,10 @@ interface ToolbarProps {
   appRegistry?: AppRegistry;
   onClearFocus?: () => void;
   folderRegistry?: FolderRegistry;
+  isWindowsPreviewOpen: boolean;
+  onToggleWindowsPreview: (open: boolean) => void;
+  onWindowsPreviewZonesChange: (zones: WindowsPreviewZone[]) => void;
+  activeWindowsPreviewZone: string | null;
 }
 
 export function Toolbar({ 
@@ -43,7 +48,11 @@ export function Toolbar({
   setOnDragStartCallback,
   appRegistry,
   onClearFocus,
-  folderRegistry
+  folderRegistry,
+  isWindowsPreviewOpen,
+  onToggleWindowsPreview,
+  onWindowsPreviewZonesChange,
+  activeWindowsPreviewZone
 }: ToolbarProps) {
   const { navigationPath, currentSubmenu, navigateToSubmenu, navigateBack, getParentLabel } = useNestedSubmenuNavigation(300);
   const [arrangeSubmenu, setArrangeSubmenu] = useState<string | null>(null);
@@ -107,6 +116,18 @@ export function Toolbar({
     }
   }, [focusedAppId, expandLevel]);
 
+  useEffect(() => {
+    if (expandLevel === "collapsed" && isWindowsPreviewOpen) {
+      onToggleWindowsPreview(false);
+    }
+  }, [expandLevel, isWindowsPreviewOpen, onToggleWindowsPreview]);
+
+  useEffect(() => {
+    if (!isWindowsPreviewOpen) {
+      onWindowsPreviewZonesChange([]);
+    }
+  }, [isWindowsPreviewOpen, onWindowsPreviewZonesChange]);
+
   // Reset active layout when expandLevel changes
   useEffect(() => {
     if (expandLevel === "collapsed" || navigationPath.length === 0) {
@@ -139,8 +160,16 @@ export function Toolbar({
     { name: "layouts", workspace: "layouts", icon: Grid, opensSubmenu: "layouts" },
   ];
 
+  const windowsLayoutButton: ToolbarButtonConfig = {
+    name: "snap",
+    workspace: "windows-layout",
+    icon: LayoutGrid,
+    title: "Windows Snap Layouts",
+  };
+
   // Main arrangement buttons for focused apps - appear at bottom when app is selected
   const appArrangeButtons: ToolbarButtonConfig[] = [
+    windowsLayoutButton,
     { name: "thirds", icon: Columns3, opensSubmenu: "thirds", title: "Thirds" },
     { name: "quarters", icon: Grid2X2, opensSubmenu: "quarters", title: "Quarters" },
     { name: "halves", icon: Columns2, opensSubmenu: "halves", title: "Halves" },
@@ -406,11 +435,23 @@ export function Toolbar({
   };
 
   const handleAppArrangeButtonClick = (button: ToolbarButtonConfig) => {
+    if (button.workspace === "windows-layout") {
+      const nextState = !isWindowsPreviewOpen;
+      onToggleWindowsPreview(nextState);
+      if (nextState) {
+        setArrangeSubmenu(null);
+      }
+      return;
+    }
+
     if (button.isCancel) {
       setArrangeSubmenu(null);
+      onToggleWindowsPreview(false);
     } else if (button.opensSubmenu) {
       setArrangeSubmenu(button.opensSubmenu);
+      onToggleWindowsPreview(false);
     } else if (button.workspace && button.workspace !== "cancel") {
+      onToggleWindowsPreview(false);
       onArrangeApp(button.workspace);
       // Don't reset submenu - keep it open after action
     }
@@ -486,13 +527,18 @@ export function Toolbar({
           const distance = (i + 1) * 3.5; // 3.5rem spacing for square buttons
           // Only show when: focused app exists, toolbar expanded, no submenu active, not in layout mode, and not in any workspace submenu
           const isVisible = focusedAppId && expandLevel !== "collapsed" && !arrangeSubmenu && !activeLayout && navigationPath.length === 0;
+          const isSnapButton = button.workspace === "windows-layout";
+          const isActiveSnap = isSnapButton && isWindowsPreviewOpen;
 
           return (
             <div
               key={`arrange-${i}`}
               onClick={() => isVisible && handleAppArrangeButtonClick(button)}
               className={[
-                "absolute right-0 flex flex-col items-center justify-center gap-0.5 bg-black/80 backdrop-blur-[27px] outline outline-white/30 rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white hover:bg-black/90",
+                "absolute right-0 flex flex-col items-center justify-center gap-0.5 backdrop-blur-[27px] rounded-xl w-12 h-12 cursor-pointer transition-all duration-300 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white",
+                isActiveSnap
+                  ? "bg-emerald-500/70 outline outline-emerald-300/60 hover:bg-emerald-500/80"
+                  : "bg-black/80 outline outline-white/30 hover:bg-black/90",
                 "bottom-0 z-[9999]",
                 isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
               ].join(" ")}
@@ -502,12 +548,28 @@ export function Toolbar({
               }}
               role="button"
               title={button.title || button.name}
+              aria-pressed={isSnapButton ? isWindowsPreviewOpen : undefined}
+              data-active={isActiveSnap || undefined}
             >
               <IconComponent size={16} strokeWidth={2.5} />
               <span className="font-bold text-[8px]">{button.name}</span>
             </div>
           );
         })}
+
+        <WindowsLayoutSection
+          isVisible={Boolean(
+            focusedAppId &&
+            expandLevel !== "collapsed" &&
+            !arrangeSubmenu &&
+            !activeLayout &&
+            navigationPath.length === 0 &&
+            isWindowsPreviewOpen
+          )}
+          activeZone={activeWindowsPreviewZone}
+          onClose={() => onToggleWindowsPreview(false)}
+          onZonesChange={onWindowsPreviewZonesChange}
+        />
 
         {/* Halves submenu for arrangement */}
         {halvesButtons.map((button, i) => {
